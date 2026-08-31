@@ -36,10 +36,10 @@ export default function SelfAssessment() {
     setError('');
     setLoading(true);
     try {
-      // Save a minimal session first
+      // Save a minimal EEG session first
       const sessRes = await api.saveSessions({
-        bpm: 72, hrv: 45, attention: 50, meditation: 50,
-        alpha: 15, beta: 15, theta: 10, baRatio: 1.0,
+        attention: 50, meditation: 50,
+        alpha: 15, beta: 10, theta: 10, baRatio: 0.67,
         state: confirmedState, method: 'Self-Report', confidence: 1.0,
       });
 
@@ -55,8 +55,8 @@ export default function SelfAssessment() {
 
       // Online update
       await api.updateClassifier({
-        bpm: 72, hrv: 45, attention: 50, meditation: 50,
-        alpha: 15, beta: 15, theta: 10, baRatio: 1.0,
+        attention: 50, meditation: 50,
+        alpha: 15, beta: 10, theta: 10, baRatio: 0.67,
         trueState: confirmedState, feedbackScore: discomfort,
       });
 

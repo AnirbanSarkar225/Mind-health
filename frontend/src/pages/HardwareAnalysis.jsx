@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 
@@ -14,29 +14,39 @@ const BAR_LABELS = ['Anxiety', 'Depression', 'Stress', 'Equilibrium'];
 
 export default function HardwareAnalysis() {
   const navigate = useNavigate();
-  const [signals, setSignals] = useState({ bpm: 0, hrv: 0, attention: 0, meditation: 0, baRatio: 0 });
+  const [signals, setSignals] = useState({
+    attention: 50,
+    meditation: 50,
+    alpha: 15,
+    beta: 10,
+    theta: 12,
+    baRatio: 0.67,
+  });
   const [classification, setClassification] = useState(null);
   const [useML, setUseML] = useState(true);
 
   const updateSignal = (key, val) => {
-    setSignals(prev => ({ ...prev, [key]: val }));
+    setSignals(prev => {
+      const next = { ...prev, [key]: val };
+      if (key === 'alpha' || key === 'beta') {
+        const a = key === 'alpha' ? val : next.alpha;
+        const b = key === 'beta' ? val : next.beta;
+        next.baRatio = +(b / (a || 0.001)).toFixed(2);
+      }
+      return next;
+    });
   };
 
-  const deriveEEG = useCallback((att, med, ba) => {
-    const alpha = Math.max(1, 30 * (med / 100) + (Math.random() - 0.5) * 3);
-    const beta = Math.max(1, alpha * ba + (Math.random() - 0.5) * 2);
-    const theta = Math.max(1, 20 * (1 - att / 100) + (Math.random() - 0.5) * 3);
-    return { alpha: +alpha.toFixed(1), beta: +beta.toFixed(1), theta: +theta.toFixed(1) };
-  }, []);
-
   const runClassification = async () => {
-    const eeg = deriveEEG(signals.attention, signals.meditation, signals.baRatio);
     try {
       const result = await api.classify({
-        bpm: signals.bpm, hrv: signals.hrv,
-        attention: signals.attention, meditation: signals.meditation,
-        alpha: eeg.alpha, beta: eeg.beta, theta: eeg.theta,
-        baRatio: signals.baRatio, useML,
+        attention: signals.attention,
+        meditation: signals.meditation,
+        alpha: signals.alpha,
+        beta: signals.beta,
+        theta: signals.theta,
+        baRatio: signals.baRatio,
+        useML,
       });
       setClassification(result);
     } catch (e) {
@@ -52,39 +62,39 @@ export default function HardwareAnalysis() {
         &larr; Dashboard
       </button>
       <div className="page-header">
-        <h1>Hardware & Analysis</h1>
-        <p>Connect biosignal hardware, view live telemetry, and receive AI-powered Vedantic remediation</p>
+        <h1>EEG Hardware & Analysis</h1>
+        <p>BioAmp EXG Pill telemetry, real-time brainwave spectrum analysis, and AI Vedantic remediation</p>
       </div>
 
       {/* Hardware Config */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h4>Signal Source — Manual Calibration</h4>
+          <h4>Signal Source — BioAmp EEG Calibration</h4>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.88rem', cursor: 'pointer' }}>
             <input type="checkbox" checked={useML} onChange={(e) => setUseML(e.target.checked)} />
-            ML Classifier
+            ML Gaussian Classifier
           </label>
         </div>
         <div className="gauges-row" style={{ gridTemplateColumns: 'repeat(5,1fr)' }}>
-          <SliderInput label="Heart Rate (BPM)" min={0} max={150} value={signals.bpm} onChange={v => updateSignal('bpm', v)} />
-          <SliderInput label="HRV SDNN (ms)" min={0} max={120} value={signals.hrv} onChange={v => updateSignal('hrv', v)} />
           <SliderInput label="EEG Attention" min={0} max={100} value={signals.attention} onChange={v => updateSignal('attention', v)} />
           <SliderInput label="EEG Meditation" min={0} max={100} value={signals.meditation} onChange={v => updateSignal('meditation', v)} />
-          <SliderInput label="Beta/Alpha Ratio" min={0} max={4} step={0.1} value={signals.baRatio} onChange={v => updateSignal('baRatio', v)} />
+          <SliderInput label="Alpha Power (μV)" min={1} max={50} value={signals.alpha} onChange={v => updateSignal('alpha', v)} />
+          <SliderInput label="Beta Power (μV)" min={1} max={50} value={signals.beta} onChange={v => updateSignal('beta', v)} />
+          <SliderInput label="Theta Power (μV)" min={1} max={50} value={signals.theta} onChange={v => updateSignal('theta', v)} />
         </div>
         <button className="btn btn-primary" onClick={runClassification} style={{ marginTop: '0.5rem' }}>
-          Analyze Biosignals
+          Analyze EEG Biosignals
         </button>
       </div>
 
       {/* Telemetry Gauges */}
-      <div className="section-label">TELEMETRY METRICS</div>
+      <div className="section-label">EEG TELEMETRY METRICS</div>
       <div className="gauges-row">
-        <GaugeCard label="Heart Rate" value={signals.bpm} unit="bpm" />
-        <GaugeCard label="HRV SDNN" value={signals.hrv} unit="ms" />
-        <GaugeCard label="EEG Attention" value={signals.attention} unit="" />
-        <GaugeCard label="EEG Meditation" value={signals.meditation} unit="" />
-        <GaugeCard label="Beta/Alpha" value={signals.baRatio} unit="" />
+        <GaugeCard label="EEG Attention" value={signals.attention} unit="/100" />
+        <GaugeCard label="EEG Meditation" value={signals.meditation} unit="/100" />
+        <GaugeCard label="Alpha Wave" value={signals.alpha} unit="μV" />
+        <GaugeCard label="Beta Wave" value={signals.beta} unit="μV" />
+        <GaugeCard label="Beta/Alpha" value={signals.baRatio} unit="ratio" />
       </div>
 
       {/* Assessment + Waveform */}
@@ -123,13 +133,14 @@ export default function HardwareAnalysis() {
               ))}
             </div>
             <div>
-              <div className="section-label">LIVE TELEMETRY STREAM</div>
+              <div className="section-label">LIVE EEG SPECTRAL DENSITY</div>
               <div className="card" style={{ background: '#1B1B2D', color: '#fff', padding: '1.5rem', borderRadius: 'var(--radius-md)', minHeight: 200 }}>
-                <div style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '0.5rem' }}>Cardio & EEG Telemetry</div>
-                <div style={{ display: 'flex', gap: '2rem', fontSize: '0.9rem' }}>
-                  <div><span style={{color:'var(--red-soft)'}}>●</span> BPM: {signals.bpm}</div>
-                  <div><span style={{color:'var(--primary)'}}>●</span> Att: {signals.attention}</div>
-                  <div><span style={{color:'var(--sage)'}}>●</span> Med: {signals.meditation}</div>
+                <div style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '0.5rem' }}>BioAmp Frontal EEG Bands</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.9rem', marginTop: '1rem' }}>
+                  <div><span style={{color:'var(--green-soft)'}}>●</span> Alpha (8-13 Hz): {signals.alpha} μV</div>
+                  <div><span style={{color:'var(--amber-soft)'}}>●</span> Beta (13-30 Hz): {signals.beta} μV</div>
+                  <div><span style={{color:'var(--blue-soft)'}}>●</span> Theta (4-8 Hz): {signals.theta} μV</div>
+                  <div><span style={{color:'var(--primary)'}}>●</span> Med Score: {signals.meditation}</div>
                 </div>
                 <div style={{ marginTop: '1.5rem', fontSize: '0.85rem', opacity: 0.7 }}>Beta/Alpha Spectral Ratio</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{signals.baRatio.toFixed(2)}</div>

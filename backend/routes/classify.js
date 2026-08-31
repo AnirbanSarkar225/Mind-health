@@ -1,33 +1,30 @@
-/**
- * Classification route — accept biosignal readings, return state + verse.
- */
-
 import { Router } from 'express';
 import { classify, onlineUpdate, computeScores } from '../models/classifier.js';
 import { GITA_VERSES } from '../models/verses.js';
 
 const router = Router();
 
-// Track ML update count per-process (resets on restart)
 let mlUpdates = 0;
 
-// POST /api/classify — classify biosignal readings
+// POST /api/classify — classify EEG biosignal readings
 router.post('/', (req, res) => {
   try {
     const {
-      bpm = 0, hrv = 0, attention = 0, meditation = 0,
+      attention = 0, meditation = 0,
       alpha = 0, beta = 0, theta = 0, baRatio = 0,
       useML = true,
     } = req.body;
 
     const signals = {
-      bpm, hrvSdnn: hrv,
-      eegAttention: attention, eegMeditation: meditation,
-      alphaPower: alpha, betaPower: beta, thetaPower: theta,
-      betaAlphaRatio: baRatio,
+      eegAttention: attention,
+      eegMeditation: meditation,
+      alphaPower: alpha,
+      betaPower: beta,
+      thetaPower: theta,
+      betaAlphaRatio: baRatio || (alpha > 0 ? beta / alpha : 1.0),
     };
 
-    const isIdle = bpm === 0 && hrv === 0 && attention === 0 && meditation === 0;
+    const isIdle = attention === 0 && meditation === 0 && alpha === 0 && beta === 0;
 
     if (isIdle) {
       const verse = GITA_VERSES['EQUILIBRIUM (Sattva)'];
@@ -63,16 +60,18 @@ router.post('/', (req, res) => {
 router.post('/update', (req, res) => {
   try {
     const {
-      bpm = 0, hrv = 0, attention = 0, meditation = 0,
-      alpha = 0, beta = 0, theta = 0, baRatio = 0,
+      attention = 50, meditation = 50,
+      alpha = 15, beta = 10, theta = 10, baRatio = 0.67,
       trueState, feedbackScore = 3.0,
     } = req.body;
 
     const signals = {
-      bpm, hrvSdnn: hrv,
-      eegAttention: attention, eegMeditation: meditation,
-      alphaPower: alpha, betaPower: beta, thetaPower: theta,
-      betaAlphaRatio: baRatio,
+      eegAttention: attention,
+      eegMeditation: meditation,
+      alphaPower: alpha,
+      betaPower: beta,
+      thetaPower: theta,
+      betaAlphaRatio: baRatio || (alpha > 0 ? beta / alpha : 1.0),
     };
 
     onlineUpdate(signals, trueState, feedbackScore);

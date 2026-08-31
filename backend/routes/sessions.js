@@ -5,10 +5,16 @@ import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
-// POST /api/sessions — save a session
+// POST /api/sessions — save an EEG session
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { bpm, hrv, attention, meditation, alpha, beta, theta, baRatio, state, method, confidence } = req.body;
+    const {
+      bpm = 0, hrv = 0,
+      attention = 50, meditation = 50,
+      alpha = 15, beta = 10, theta = 10,
+      baRatio = 0.67,
+      state, method, confidence,
+    } = req.body;
     
     const sessId = uuidv4();
     await query(
@@ -43,7 +49,7 @@ router.get('/', authMiddleware, async (req, res) => {
 router.get('/stats', authMiddleware, async (req, res) => {
   try {
     const sessRes = await query(
-      `SELECT bpm, eeg_meditation, confidence, detected_state, created_at 
+      `SELECT eeg_attention, eeg_meditation, alpha_power, beta_power, beta_alpha_ratio, confidence, detected_state, created_at 
        FROM sessions WHERE user_id = ? ORDER BY created_at DESC`,
       [req.user.id]
     );
@@ -56,9 +62,10 @@ router.get('/stats', authMiddleware, async (req, res) => {
     const rows = sessRes.rows;
     let totalSessions = rows.length;
     let lastSessionAt = totalSessions > 0 ? rows[0].created_at : null;
-    let avgBpm = 0;
+    let avgAttention = 0;
     let avgMeditation = 0;
     let avgConfidence = 0;
+    let avgAlpha = 0;
     let mostFrequentState = 'N/A';
 
     if (totalSessions > 0) {
@@ -66,9 +73,10 @@ router.get('/stats', authMiddleware, async (req, res) => {
       let maxCount = 0;
 
       rows.forEach(r => {
-        avgBpm += r.bpm;
-        avgMeditation += r.eeg_meditation;
-        avgConfidence += r.confidence;
+        avgAttention += (r.eeg_attention || 0);
+        avgMeditation += (r.eeg_meditation || 0);
+        avgAlpha += (r.alpha_power || 0);
+        avgConfidence += (r.confidence || 0);
         
         stateCounts[r.detected_state] = (stateCounts[r.detected_state] || 0) + 1;
         if (stateCounts[r.detected_state] > maxCount) {
@@ -77,8 +85,9 @@ router.get('/stats', authMiddleware, async (req, res) => {
         }
       });
 
-      avgBpm /= totalSessions;
+      avgAttention /= totalSessions;
       avgMeditation /= totalSessions;
+      avgAlpha /= totalSessions;
       avgConfidence /= totalSessions;
     }
 
@@ -86,11 +95,12 @@ router.get('/stats', authMiddleware, async (req, res) => {
       stats: {
         totalSessions,
         lastSessionAt,
-        avgBpm,
+        avgAttention,
         avgMeditation,
+        avgAlpha,
         avgConfidence,
         mostFrequentState,
-        totalFeedback: feedbackRes.rows[0].count
+        totalFeedback: feedbackRes.rows[0].count,
       }
     });
   } catch (e) {
