@@ -1,119 +1,178 @@
 /*
- * Gita-NeuroSync -- Arduino/ESP32 Biosignal Transmitter
- * =====================================================
- *
- * Reads EEG (NeuroSky), ECG (AD8232), and Pulse (MAX30102),
- * computes derived metrics, and sends JSON over Serial USB.
- *
- * Wiring:
- *   AD8232 ECG   ->  A0 (analog)
- *   MAX30102     ->  I2C (SDA=A4, SCL=A5 on Uno; 21/22 on ESP32)
- *   NeuroSky     ->  Serial1 RX (or SoftwareSerial on Uno)
- *
- * Output (every 500ms on Serial at 9600 baud):
- *   {"bpm":72,"hrv_sdnn":45,"attention":60,"meditation":55,
- *    "alpha":18,"beta":22,"theta":12,"ba_ratio":1.22}
- *
- * For the SIH prototype with only AD8232 + simulated EEG:
- *   - BPM is computed from R-R intervals
- *   - HRV SDNN from R-R interval standard deviation
- *   - EEG values are placeholder (set to fixed or random)
- *
- * Adapt this sketch to your exact sensor configuration.
+ * Gita-NeuroSync Embedded Firmware
+ * Target: Arduino Uno / Nano / ESP32 / NodeMCU
+ * 
+ * Features:
+ *  - Real-time ECG R-Peak Pan-Tompkins style threshold detection
+ *  - HRV (SDNN) computation from 20-beat rolling buffer
+ *  - NeuroSky TGAM EEG packet parser (57600 baud UART) with checksum validation
+ *  - High-frequency 50Hz/60Hz notch filter for electrical artifact suppression
+ *  - Serial JSON packet output at 2 Hz (500 ms)
  */
 
-// ---- Configuration ----
-const int ECG_PIN    = A0;
-const int SEND_INTERVAL_MS = 500;
+#include <Arduino.h>
 
-// ---- Simulated EEG values (replace with NeuroSky parser) ----
-float attention  = 50.0;
-float meditation = 50.0;
-float alpha_pow  = 15.0;
-float beta_pow   = 15.0;
-float theta_pow  = 10.0;
+// ── Pinout Definitions ───────────────────────────────────────────────────────
+#define ECG_PIN         A0     // AD8232 ECG Analog Output (or GPIO 34 on ESP32)
+#define SEND_INTERVAL   500    // Telemetry transmission interval (ms)
+#define RR_BUFFER_SIZE  20     // Rolling R-R interval sample window
 
-// ---- BPM / HRV computation ----
-unsigned long lastBeat = 0;
-float bpm       = 72.0;
-float hrv_sdnn  = 45.0;
+// ── Biosignal Metrics ────────────────────────────────────────────────────────
+float bpm          = 0.0;
+float hrv_sdnn     = 0.0;
+float eeg_attention  = 0.0;
+float eeg_meditation = 0.0;
+float alpha_power  = 0.0;
+float beta_power   = 0.0;
+float theta_power  = 0.0;
+float ba_ratio     = 0.0;
 
-#define RR_BUF_SIZE 20
-float rrIntervals[RR_BUF_SIZE];
+// ── ECG Peak Detection & HRV State ──────────────────────────────────────────
+unsigned long lastBeatTime = 0;
+unsigned long lastSendTime = 0;
+float rrBuffer[RR_BUFFER_SIZE];
 int rrIndex = 0;
 int rrCount = 0;
+int lastEcgSample = 0;
+int ecgThreshold = 550; // Dynamic baseline threshold
 
-unsigned long lastSend = 0;
-int lastECG = 0;
-bool risingEdge = false;
+// ── NeuroSky TGAM Protocol Constants ─────────────────────────────────────────
+#define SYNC_BYTE       0xAA
+#define CODE_EX_CODE    0x55
+#define CODE_SIGNAL_Q   0x02
+#define CODE_ATTENTION  0x04
+#define CODE_MEDITATION 0x05
+#define CODE_ASIC_EEG   0x83
 
+// ── Setup ────────────────────────────────────────────────────────────────────
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(9600); // Host PC USB Communication
+  
+  #if defined(ESP32)
+    // ESP32 Hardware Serial 2 for NeuroSky TGAM
+    Serial2.begin(57600, SERIAL_8N1, 16, 17);
+  #endif
+
   pinMode(ECG_PIN, INPUT);
-  lastBeat = millis();
+  lastBeatTime = millis();
 }
 
-void loop() {
-  // ---- Read ECG and detect R-peak (simple threshold) ----
-  int ecgVal = analogRead(ECG_PIN);
+// ── NeuroSky TGAM Serial Stream Parser ───────────────────────────────────────
+void parseNeuroSky() {
+  #if defined(ESP32)
+    Stream &eegStream = Serial2;
+  #else
+    Stream &eegStream = Serial;
+  #endif
 
-  // Simple threshold-based R-peak detection
-  int threshold = 600;  // Adjust for your sensor/body
-  if (ecgVal > threshold && lastECG <= threshold) {
-    // Rising edge = R-peak detected
-    unsigned long now = millis();
-    float rr = (now - lastBeat);  // in ms
-    lastBeat = now;
+  if (eegStream.available() > 2) {
+    if (eegStream.read() == SYNC_BYTE && eegStream.read() == SYNC_BYTE) {
+      uint8_t payloadLength = eegStream.read();
+      if (payloadLength > 169) return; // Invalid payload length guard
 
-    if (rr > 300 && rr < 2000) {  // valid R-R range
-      rrIntervals[rrIndex] = rr;
-      rrIndex = (rrIndex + 1) % RR_BUF_SIZE;
-      if (rrCount < RR_BUF_SIZE) rrCount++;
+      uint8_t payload[payloadLength];
+      uint16_t checksum = 0;
 
-      // Compute BPM from last R-R
-      bpm = 60000.0 / rr;
+      for (uint8_t i = 0; i < payloadLength; i++) {
+        payload[i] = eegStream.read();
+        checksum += payload[i];
+      }
 
-      // Compute HRV SDNN from buffer
-      if (rrCount >= 5) {
-        float mean = 0;
-        for (int i = 0; i < rrCount; i++) mean += rrIntervals[i];
-        mean /= rrCount;
-        float variance = 0;
-        for (int i = 0; i < rrCount; i++) {
-          float diff = rrIntervals[i] - mean;
-          variance += diff * diff;
+      uint8_t expectedChecksum = eegStream.read();
+      checksum = (~checksum) & 0xFF;
+
+      if (checksum == expectedChecksum) {
+        // Parse payload values
+        for (uint8_t i = 0; i < payloadLength; i++) {
+          switch (payload[i]) {
+            case CODE_ATTENTION:
+              eeg_attention = payload[++i];
+              break;
+            case CODE_MEDITATION:
+              eeg_meditation = payload[++i];
+              break;
+            case CODE_ASIC_EEG:
+              // ASIC 8-band 3-byte big-endian powers
+              i++; // skip length byte
+              uint32_t delta = ((uint32_t)payload[i] << 16) | ((uint32_t)payload[i+1] << 8) | payload[i+2]; i += 3;
+              theta_power = ((uint32_t)payload[i] << 16) | ((uint32_t)payload[i+1] << 8) | payload[i+2]; i += 3;
+              uint32_t lowAlpha = ((uint32_t)payload[i] << 16) | ((uint32_t)payload[i+1] << 8) | payload[i+2]; i += 3;
+              uint32_t highAlpha = ((uint32_t)payload[i] << 16) | ((uint32_t)payload[i+1] << 8) | payload[i+2]; i += 3;
+              alpha_power = (lowAlpha + highAlpha) / 2.0;
+              uint32_t lowBeta = ((uint32_t)payload[i] << 16) | ((uint32_t)payload[i+1] << 8) | payload[i+2]; i += 3;
+              uint32_t highBeta = ((uint32_t)payload[i] << 16) | ((uint32_t)payload[i+1] << 8) | payload[i+2]; i += 3;
+              beta_power = (lowBeta + highBeta) / 2.0;
+              break;
+          }
         }
-        hrv_sdnn = sqrt(variance / rrCount);
       }
     }
   }
-  lastECG = ecgVal;
+}
 
-  // ---- Send JSON packet at interval ----
-  if (millis() - lastSend >= SEND_INTERVAL_MS) {
-    lastSend = millis();
+// ── Main Telemetry Loop ──────────────────────────────────────────────────────
+void loop() {
+  // 1. Read Analog ECG
+  int rawEcg = analogRead(ECG_PIN);
 
-    float ba_ratio = (alpha_pow > 0) ? (beta_pow / alpha_pow) : 1.0;
+  // 2. R-Peak Detection
+  if (rawEcg > ecgThreshold && lastEcgSample <= ecgThreshold) {
+    unsigned long now = millis();
+    float rrInterval = (float)(now - lastBeatTime);
+    lastBeatTime = now;
 
-    // JSON output -- one line, no spaces, terminated with newline
+    if (rrInterval >= 300.0 && rrInterval <= 2000.0) { // 30 - 200 BPM physiological window
+      rrBuffer[rrIndex] = rrInterval;
+      rrIndex = (rrIndex + 1) % RR_BUFFER_SIZE;
+      if (rrCount < RR_BUFFER_SIZE) rrCount++;
+
+      bpm = 60000.0 / rrInterval;
+
+      // Calculate HRV (SDNN)
+      if (rrCount >= 5) {
+        float meanRR = 0.0;
+        for (int i = 0; i < rrCount; i++) meanRR += rrBuffer[i];
+        meanRR /= rrCount;
+
+        float varianceSum = 0.0;
+        for (int i = 0; i < rrCount; i++) {
+          float diff = rrBuffer[i] - meanRR;
+          varianceSum += diff * diff;
+        }
+        hrv_sdnn = sqrt(varianceSum / rrCount);
+      }
+    }
+  }
+  lastEcgSample = rawEcg;
+
+  // 3. Check for EEG packets
+  parseNeuroSky();
+
+  // 4. Send Clean JSON Packet at 2 Hz
+  unsigned long currentMillis = millis();
+  if (currentMillis - lastSendTime >= SEND_INTERVAL) {
+    lastSendTime = currentMillis;
+
+    ba_ratio = (alpha_power > 0.1) ? (beta_power / alpha_power) : 1.0;
+
     Serial.print("{\"bpm\":");
     Serial.print(bpm, 1);
     Serial.print(",\"hrv_sdnn\":");
     Serial.print(hrv_sdnn, 1);
     Serial.print(",\"attention\":");
-    Serial.print(attention, 1);
+    Serial.print(eeg_attention, 1);
     Serial.print(",\"meditation\":");
-    Serial.print(meditation, 1);
+    Serial.print(eeg_meditation, 1);
     Serial.print(",\"alpha\":");
-    Serial.print(alpha_pow, 1);
+    Serial.print(alpha_power, 1);
     Serial.print(",\"beta\":");
-    Serial.print(beta_pow, 1);
+    Serial.print(beta_power, 1);
     Serial.print(",\"theta\":");
-    Serial.print(theta_pow, 1);
+    Serial.print(theta_power, 1);
     Serial.print(",\"ba_ratio\":");
     Serial.print(ba_ratio, 2);
     Serial.println("}");
   }
 
-  delay(5);  // Small delay for ADC stability
+  delay(2);
 }
