@@ -1,5 +1,5 @@
 /**
- * start.js — Launcher script for Gita-NeuroSync React (Frontend) + Node.js (Backend)
+ * start.js — Single-command Launcher for Gita-NeuroSync React + Node.js
  */
 
 import { spawn } from 'child_process';
@@ -16,23 +16,23 @@ console.log('====================================================');
 console.log('  GITA-NEUROSYNC — STARTING SERVICES');
 console.log('====================================================\n');
 
-// Start backend (Express API on port 5000)
+// 1. Start Backend Express API (port 5000)
 const backendProcess = spawn('npm', ['run', 'dev'], {
   cwd: backendDir,
   stdio: 'inherit',
   shell: true,
 });
 
-// Start frontend (Vite React on port 5173 with native auto browser open)
-const frontendProcess = spawn('npm', ['run', 'dev', '--', '--open'], {
+// 2. Start Frontend Vite App (port 5173 — opens browser once via vite.config.js)
+const frontendProcess = spawn('npm', ['run', 'dev'], {
   cwd: frontendDir,
   stdio: 'inherit',
   shell: true,
 });
 
-// Handle termination
+// Graceful Shutdown
 process.on('SIGINT', () => {
-  console.log('\nShutting down Gita-NeuroSync...');
+  console.log('\nShutting down Gita-NeuroSync services...');
   backendProcess.kill('SIGINT');
   frontendProcess.kill('SIGINT');
   process.exit();
