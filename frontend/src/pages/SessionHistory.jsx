@@ -508,9 +508,39 @@ export default function SessionHistory() {
                     )}
                   </div>
 
+                  {/* Prominent Physical Activity & Movement Card */}
+                  {(() => {
+                    const pAct = modalLang === 'hi' ? verse.physicalActivity_hi || verse.physicalActivity : modalLang === 'bn' ? verse.physicalActivity_bn || verse.physicalActivity : modalLang === 'hl' ? verse.physicalActivity_hl || verse.physicalActivity : verse.physicalActivity;
+                    if (!pAct) return null;
+                    return (
+                      <div className="card" style={{ marginBottom: '1.25rem', background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(76,114,255,0.05))', borderLeft: '5px solid var(--sage)', borderTop: '1px solid var(--border)', borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', padding: '14px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontSize: '1.2rem' }}>🏃</span>
+                            <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--sage)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                              PRESCRIBED PHYSICAL ACTIVITY & SOMATIC MOVEMENT
+                            </span>
+                          </div>
+                          <span style={{ background: 'var(--sage-bg)', border: '1px solid var(--sage)', color: 'var(--sage)', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 700 }}>
+                            ⏱️ {pAct.duration}
+                          </span>
+                        </div>
+                        <h4 style={{ margin: '0 0 4px', color: 'var(--text-primary)', fontSize: '1.05rem' }}>
+                          {pAct.name}
+                        </h4>
+                        <p style={{ margin: '0 0 8px', fontSize: '0.85rem', color: 'var(--text-primary)', lineHeight: '1.5' }}>
+                          <strong>Instructions:</strong> {pAct.instructions}
+                        </p>
+                        <div style={{ background: '#fff', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '6px', padding: '6px 10px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                          <strong>🔬 Vagal Benefit:</strong> {pAct.benefit}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {/* Recommended Exercises & Suggestions */}
                   <div style={{ marginBottom: '1.25rem' }}>
-                    <div className="section-label" style={{ color: 'var(--sage)' }}>TAILORED CLINICAL EXERCISES & SUGGESTIONS</div>
+                    <div className="section-label" style={{ color: 'var(--primary)' }}>COGNITIVE & LIFESTYLE EXERCISES</div>
                     <div className="grid-3" style={{ gap: '0.75rem', marginTop: '0.5rem' }}>
                       <div className="card-subtle" style={{ padding: '12px' }}>
                         <strong style={{ color: 'var(--primary)', fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>

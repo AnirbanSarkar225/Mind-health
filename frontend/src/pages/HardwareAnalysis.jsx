@@ -209,6 +209,36 @@ export default function HardwareAnalysis() {
                 </span>
               </div>
 
+              {/* Prominent Physical Activity & Movement Card */}
+              {(() => {
+                const pAct = lang === 'hi' ? verse.physicalActivity_hi || verse.physicalActivity : lang === 'bn' ? verse.physicalActivity_bn || verse.physicalActivity : lang === 'hl' ? verse.physicalActivity_hl || verse.physicalActivity : verse.physicalActivity;
+                if (!pAct) return null;
+                return (
+                  <div className="card" style={{ marginBottom: '1.5rem', background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(76,114,255,0.05))', borderLeft: '5px solid var(--sage)', borderTop: '1px solid var(--border)', borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '1.3rem' }}>🏃</span>
+                        <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--sage)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          PRESCRIBED PHYSICAL ACTIVITY & SOMATIC MOVEMENT
+                        </span>
+                      </div>
+                      <span style={{ background: 'var(--sage-bg)', border: '1px solid var(--sage)', color: 'var(--sage)', padding: '3px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700 }}>
+                        ⏱️ {pAct.duration}
+                      </span>
+                    </div>
+                    <h3 style={{ margin: '0 0 6px', color: 'var(--text-primary)', fontSize: '1.15rem' }}>
+                      {pAct.name}
+                    </h3>
+                    <p style={{ margin: '0 0 10px', fontSize: '0.9rem', color: 'var(--text-primary)', lineHeight: '1.6' }}>
+                      <strong>Step-by-Step Instructions:</strong> {pAct.instructions}
+                    </p>
+                    <div style={{ background: '#fff', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '8px', padding: '8px 12px', fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
+                      <strong>🔬 Biological & Vagal Benefit:</strong> {pAct.benefit}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="grid-2">
                 <div>
                   <div className="section-label">PRESCRIPTION SHLOKA & MEANING</div>

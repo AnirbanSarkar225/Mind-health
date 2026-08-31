@@ -315,7 +315,16 @@ export default function SelfAssessment() {
     return resultVerse.sanskrit;
   };
 
+  const getPhysicalActivity = () => {
+    if (!resultVerse) return null;
+    if (lang === 'hi') return resultVerse.physicalActivity_hi || resultVerse.physicalActivity;
+    if (lang === 'bn') return resultVerse.physicalActivity_bn || resultVerse.physicalActivity;
+    if (lang === 'hl') return resultVerse.physicalActivity_hl || resultVerse.physicalActivity;
+    return resultVerse.physicalActivity;
+  };
+
   const exercises = CLINICAL_EXERCISES[diagnosedState] || CLINICAL_EXERCISES['EQUILIBRIUM (Sattva)'];
+  const physicalAct = getPhysicalActivity();
 
   return (
     <>
@@ -343,7 +352,7 @@ export default function SelfAssessment() {
           <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: step === 3 ? 'var(--primary)' : 'var(--border)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.78rem', fontWeight: 700 }}>
             3
           </span>
-          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: step === 3 ? 'var(--primary)' : 'var(--text-secondary)' }}>Clinical Report & Exercises</span>
+          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: step === 3 ? 'var(--primary)' : 'var(--text-secondary)' }}>Clinical Report & Physical Exercises</span>
         </div>
       </div>
 
@@ -511,14 +520,14 @@ export default function SelfAssessment() {
       )}
 
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* PART 3: CLINICAL REPORT (EXERCISES, SUGGESTIONS & VEDANTIC REMEDY) */}
+      {/* PART 3: CLINICAL REPORT (PHYSICAL ACTIVITY, EXERCISES & REMEDY)    */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       {step === 3 && (
         <>
           <div className="page-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
               <h1>Clinical Cognitive Assessment & Remediation Report</h1>
-              <p>Tailored exercises, behavioral suggestions, and Vedantic grounding based on your self-assessment.</p>
+              <p>Prescribed physical activity, somatic exercises, behavioral suggestions, and Vedantic grounding.</p>
             </div>
 
             {/* Multilingual Switcher: English, Hindi, Bengali, Hinglish */}
@@ -583,9 +592,35 @@ export default function SelfAssessment() {
             </div>
           </div>
 
+          {/* PROMINENT DEDICATED PHYSICAL ACTIVITY & MOVEMENT CARD */}
+          {physicalAct && (
+            <div className="card" style={{ marginBottom: '1.5rem', background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(76,114,255,0.05))', borderLeft: '5px solid var(--sage)', borderTop: '1px solid var(--border)', borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '1.3rem' }}>🏃</span>
+                  <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--sage)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    PRESCRIBED PHYSICAL ACTIVITY & SOMATIC MOVEMENT
+                  </span>
+                </div>
+                <span style={{ background: 'var(--sage-bg)', border: '1px solid var(--sage)', color: 'var(--sage)', padding: '3px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700 }}>
+                  ⏱️ {physicalAct.duration}
+                </span>
+              </div>
+              <h3 style={{ margin: '0 0 6px', color: 'var(--text-primary)', fontSize: '1.15rem' }}>
+                {physicalAct.name}
+              </h3>
+              <p style={{ margin: '0 0 10px', fontSize: '0.9rem', color: 'var(--text-primary)', lineHeight: '1.6' }}>
+                <strong>Step-by-Step Instructions:</strong> {physicalAct.instructions}
+              </p>
+              <div style={{ background: '#fff', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '8px', padding: '8px 12px', fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
+                <strong>🔬 Biological & Vagal Benefit:</strong> {physicalAct.benefit}
+              </div>
+            </div>
+          )}
+
           {/* Section 1: Prescribed Exercises & Actionable Suggestions */}
-          <div className="card" style={{ marginBottom: '1.5rem', borderLeft: '4px solid var(--sage)' }}>
-            <div className="section-label" style={{ color: 'var(--sage)' }}>RECOMMENDED CLINICAL EXERCISES & SUGGESTIONS</div>
+          <div className="card" style={{ marginBottom: '1.5rem', borderLeft: '4px solid var(--primary)' }}>
+            <div className="section-label">RECOMMENDED COGNITIVE & LIFESTYLE EXERCISES</div>
             <div className="grid-3" style={{ gap: '1rem', marginTop: '0.75rem' }}>
               <div className="card-subtle">
                 <strong style={{ color: 'var(--primary)', display: 'block', marginBottom: '0.4rem', fontSize: '0.9rem' }}>
