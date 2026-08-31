@@ -9,46 +9,46 @@ const SYMPTOM_OPTIONS = [
   'Restlessness', 'Sadness', 'Loss of interest',
 ];
 
-// Helper to generate dynamic follow-up questions based on user's initial description
-function generateDynamicQuestions(text = '') {
+// Targeted Clinical Questionnaire Generator
+function generateTargetedQuestions(text = '') {
   const t = text.toLowerCase();
   
-  if (t.includes('anxi') || t.includes('panic') || t.includes('fear') || t.includes('worry') || t.includes('scared') || t.includes('heart') || t.includes('breath') || t.includes('exam')) {
+  if (t.includes('anxi') || t.includes('panic') || t.includes('fear') || t.includes('worry') || t.includes('scared') || t.includes('heart') || t.includes('breath') || t.includes('exam') || t.includes('tight')) {
     return [
       {
         id: 'q1',
-        text: 'How frequently are you experiencing somatic sensations like heart pounding, breathlessness, or trembling?',
-        options: ['Rarely / Mild', 'Moderately throughout the day', 'Intense & Constant'],
+        text: 'Autonomic & Somatic Arousal: Are you experiencing acute bodily sensations like heart fluttering, rapid shallow breathing, or chest tightness?',
+        options: ['No somatic sensations', 'Mild chest/throat tightness', 'Severe pounding heart & breathlessness'],
       },
       {
         id: 'q2',
-        text: 'Are your thoughts predominantly fixated on uncontrollable future outcomes or performance pressure?',
-        options: ['Slightly', 'Quite a lot', 'Completely overwhelmed by future outcomes'],
+        text: 'Cognitive Locus of Worry: Are your thoughts predominantly fixated on future performance, fear of failure, or uncontrollable outcomes?',
+        options: ['Focused on present tasks', 'Frequent worry about upcoming results', 'Completely overwhelmed by catastrophic future outcomes'],
       },
       {
         id: 'q3',
-        text: 'When you attempt to sit in silence, what happens to your mind?',
-        options: ['I can settle down', 'Racing with worry', 'Unable to stay still'],
+        text: 'Cortical Restlessness: When you attempt to sit in silence or close your eyes, what happens to your mind?',
+        options: ['I can settle down calmly', 'Thoughts race with "what-if" scenarios', 'Severe restlessness, unable to remain still'],
       },
     ];
   }
 
-  if (t.includes('depress') || t.includes('hopeless') || t.includes('sad') || t.includes('low') || t.includes('tired') || t.includes('exhaust') || t.includes('empty') || t.includes('alone')) {
+  if (t.includes('depress') || t.includes('hopeless') || t.includes('sad') || t.includes('low') || t.includes('tired') || t.includes('exhaust') || t.includes('empty') || t.includes('alone') || t.includes('lazy')) {
     return [
       {
         id: 'q1',
-        text: 'How would you describe your baseline physical energy and motivation today?',
-        options: ['Normal', 'Sluggish / Heavy', 'Completely drained & immobilized'],
+        text: 'Psychomotor Energy & Drive: How would you describe your baseline physical energy and motivation to initiate tasks today?',
+        options: ['Normal motivation', 'Heavy, sluggish, and low drive', 'Paralyzing exhaustion and complete inertia'],
       },
       {
         id: 'q2',
-        text: 'Are you experiencing a loss of interest in activities or social connections you usually enjoy?',
-        options: ['Not much', 'Noticeably detached', 'Complete loss of interest & withdrawal'],
+        text: 'Affective State & Anhedonia: Are you experiencing emotional numbness, sadness, or detachment from activities you normally value?',
+        options: ['Emotionally responsive', 'Noticeable apathy and loss of interest', 'Deep hopelessness and complete social withdrawal'],
       },
       {
         id: 'q3',
-        text: 'How has your sleep and morning wakefulness been over the past few days?',
-        options: ['Restful', 'Disturbed / Broken', 'Waking up feeling depleted'],
+        text: 'Cognitive Clarity & Sleep: How has your morning wakefulness and ability to sustain mental focus been?',
+        options: ['Clear and refreshed', 'Brain fog and delayed focus', 'Waking up feeling completely depleted'],
       },
     ];
   }
@@ -57,43 +57,67 @@ function generateDynamicQuestions(text = '') {
     return [
       {
         id: 'q1',
-        text: 'Are you noticing rapid cognitive irritability or impatience with tasks and people around you?',
-        options: ['Mild / Contained', 'Frequent irritability', 'High agitation / Ready to snap'],
+        text: 'Emotional Reactivity: How quickly do minor obstacles, delays, or interactions trigger irritation and agitation in you?',
+        options: ['I remain patient and composed', 'Frequently short-tempered and frustrated', 'Intense agitation and ready to snap'],
       },
       {
         id: 'q2',
-        text: 'Do you feel chronic physical tension in your jaw, shoulders, or forehead?',
-        options: ['No tension', 'Moderate stiffness', 'Severe physical tightness'],
+        text: 'Musculoskeletal Tension: Do you notice involuntary physical tension in your jaw, brow, neck, or shoulders?',
+        options: ['Muscles feel relaxed', 'Moderate stiffness in neck and shoulders', 'Severe jaw clenching and physical armoring'],
       },
       {
         id: 'q3',
-        text: 'How manageable do your current workload and emotional demands feel?',
-        options: ['Manageable', 'Straining my limits', 'Severely overwhelmed / Burning out'],
+        text: 'Cognitive Load & Pressure: How manageable does your current cognitive workload feel relative to your emotional capacity?',
+        options: ['Comfortably manageable', 'Straining my limits under high pressure', 'Severely burned out and chaotic'],
       },
     ];
   }
 
-  // Default General Cognitive Evaluation
+  // Balanced / General Cognitive Diagnostic
   return [
     {
       id: 'q1',
-      text: 'Is your primary discomfort centered more in your mental thoughts (overthinking) or physical body (exhaustion/tension)?',
-      options: ['Mostly mental overthinking', 'Mostly physical tension/exhaustion', 'Both mental and physical equally'],
+      text: 'Cognitive vs Somatic Distribution: Is your primary discomfort centered more in your mental thoughts (overthinking) or physical body (tension/exhaustion)?',
+      options: ['Predominantly mental overthinking', 'Predominantly physical tension/fatigue', 'Both mental and physical equally'],
     },
     {
       id: 'q2',
-      text: 'How long has this current emotional or cognitive pattern been persisting?',
-      options: ['Just started today', 'Past few days', 'Ongoing for weeks'],
+      text: 'Chronicity & Pattern: How long has this current emotional or cognitive pattern been persisting?',
+      options: ['Just started today / Acute', 'Past few days / Episodic', 'Ongoing for weeks / Chronic pattern'],
     },
     {
       id: 'q3',
-      text: 'How significantly is this state affecting your focus and peace of mind?',
-      options: ['Mildly noticeable', 'Moderately disrupting my day', 'Severely impeding my functioning'],
+      text: 'Functional Impairment: How significantly is this state affecting your decision-making, peace of mind, and daily functioning?',
+      options: ['Mildly noticeable, functional', 'Moderately disrupting my concentration', 'Severely impeding my daily tasks and peace'],
     },
   ];
 }
 
-// AI state inferencing function
+// Tailored Clinical Exercises & Suggestions by State
+const CLINICAL_EXERCISES = {
+  'ACUTE ANXIETY (Visada)': {
+    somaticExercise: '4-4-6 Extended Exhalation Breathing — Inhale for 4 seconds, hold for 4 seconds, exhale slowly for 6 seconds. Repeat 5 cycles to stimulate the vagus nerve and slow elevated heart rate.',
+    cognitiveExercise: 'Circle of Control Exercise — On a paper, write 3 factors outside your control (e.g. other people, exam questions, future outcomes) and draw a line through them. Write 1 immediate action you control right now.',
+    lifestyleSuggestion: 'Take a 15-minute complete digital screen pause. Drink a glass of room-temperature water slowly with conscious sips.',
+  },
+  'DEPRESSION / LETHARGY (Tamas)': {
+    somaticExercise: 'Postural Expansion & Movement Trigger — Stand up straight, pull shoulders back, expand your chest cavity, and take 10 deep expansive breaths. Walk at a brisk pace for 3 minutes to break physical inertia.',
+    cognitiveExercise: 'The 2-Minute Micro-Victory Rule — Choose one tiny achievable task (wash one glass, make your bed, open the window). Complete it and explicitly acknowledge it as an intentional win over lethargy.',
+    lifestyleSuggestion: 'Get 10 minutes of direct natural sunlight. Splash cold water on your face to stimulate the mammalian dive reflex.',
+  },
+  'STRESS & AGITATION (Krodha)': {
+    somaticExercise: 'Sitali Cooling Breath & Palm Pressure — Inhale slowly through curled tongue or teeth with a cooling sensation; exhale through nose. Press both palms together firmly for 10 seconds to discharge autonomic tension.',
+    cognitiveExercise: '90-Second Impulse Buffer — When feeling irritated or reactive, step away from the stimulus for exactly 90 seconds to allow the adrenaline surge to naturally metabolize.',
+    lifestyleSuggestion: 'Perform progressive shoulder rolls and conscious jaw unclogging. Avoid caffeine or stimulants for the next 4 hours.',
+  },
+  'EQUILIBRIUM (Sattva)': {
+    somaticExercise: 'Alpha Coherence Mindfulness — Close your eyes, rest hands on your lap, and observe the natural flow of breath at the tip of your nostrils for 3 minutes without forcing the rhythm.',
+    cognitiveExercise: 'Sakshi-Bhava (Witness Observation) — Observe passing thoughts and external events as a calm, detached witness, recognizing that you are the steady observer, not the turbulent thought.',
+    lifestyleSuggestion: 'Reinforce your positive state by writing down one insight or offering a kind, calming word to someone nearby.',
+  },
+};
+
+// AI State Inferencing
 function inferState(symptoms, discomfort, desc, additionalNotes, answers) {
   let anxietyScore = 0;
   let depressionScore = 0;
@@ -112,12 +136,11 @@ function inferState(symptoms, discomfort, desc, additionalNotes, answers) {
   if (fullText.includes('depress') || fullText.includes('hopeless') || fullText.includes('empty') || fullText.includes('tired') || fullText.includes('sad') || fullText.includes('alone')) depressionScore += 3.5;
   if (fullText.includes('stress') || fullText.includes('anger') || fullText.includes('irritat') || fullText.includes('tense') || fullText.includes('burnout') || fullText.includes('frustrat')) stressScore += 3.5;
 
-  // Evaluate follow-up answers
   Object.values(answers).forEach(ans => {
     const a = (ans || '').toLowerCase();
-    if (a.includes('overwhelmed') || a.includes('racing') || a.includes('intense')) anxietyScore += 2;
-    if (a.includes('drained') || a.includes('withdrawal') || a.includes('depleted')) depressionScore += 2;
-    if (a.includes('agitation') || a.includes('tightness') || a.includes('burning out')) stressScore += 2;
+    if (a.includes('overwhelmed') || a.includes('fluttering') || a.includes('racing') || a.includes('restlessness') || a.includes('catastrophic')) anxietyScore += 2.5;
+    if (a.includes('drained') || a.includes('withdrawal') || a.includes('depleted') || a.includes('sluggish') || a.includes('numbness')) depressionScore += 2.5;
+    if (a.includes('agitation') || a.includes('tightness') || a.includes('burning out') || a.includes('jaw') || a.includes('short-tempered')) stressScore += 2.5;
   });
 
   if (discomfort >= 4 && anxietyScore === 0 && depressionScore === 0 && stressScore === 0) {
@@ -137,15 +160,15 @@ function inferState(symptoms, discomfort, desc, additionalNotes, answers) {
 export default function SelfAssessment() {
   const navigate = useNavigate();
 
-  // Progressive Stage: 1 (Description) | 2 (Questions & Symptoms) | 3 (Result Analysis)
+  // Progressive Stage: 1 (Problem Description) | 2 (Questions & Symptoms) | 3 (Result Analysis & Exercises)
   const [step, setStep] = useState(1);
 
   // Stage 1 State
   const [description, setDescription] = useState('');
 
-  // Stage 2 State
+  // Stage 2 State (NO prechecked options!)
   const [dynamicQuestions, setDynamicQuestions] = useState([]);
-  const [answers, setAnswers] = useState({});
+  const [answers, setAnswers] = useState({}); // Empty by default!
   const [symptoms, setSymptoms] = useState([]);
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [discomfort, setDiscomfort] = useState(3);
@@ -168,14 +191,9 @@ export default function SelfAssessment() {
       return;
     }
     setError('');
-    const questions = generateDynamicQuestions(description);
+    const questions = generateTargetedQuestions(description);
     setDynamicQuestions(questions);
-    
-    // Initialize default answer selections
-    const initAns = {};
-    questions.forEach(q => { initAns[q.id] = q.options[0]; });
-    setAnswers(initAns);
-
+    setAnswers({}); // Do NOT precheck any options!
     setStep(2);
   };
 
@@ -196,13 +214,19 @@ export default function SelfAssessment() {
       const inferred = inferState(symptoms, discomfort, description, additionalNotes, answers);
       setDiagnosedState(inferred);
 
-      const combinedNotes = `Primary: ${description} | Follow-up: ${Object.entries(answers).map(([k, v]) => `${k}=${v}`).join(', ')} | Other: ${additionalNotes}`;
+      const combinedNotes = `Description: ${description} | Q&A: ${Object.entries(answers).map(([k, v]) => `${k}:${v}`).join('; ')} | Other: ${additionalNotes}`;
 
-      // Save a minimal session
+      // Save a clean cognitive self-assessment session (NO arbitrary fake EEG hardware numbers)
       const sessRes = await api.saveSessions({
-        attention: 50, meditation: 50,
-        alpha: 15, beta: 10, theta: 10, baRatio: 0.67,
-        state: inferred, method: 'Cognitive LLM Assessment', confidence: 0.96,
+        attention: 0,
+        meditation: 0,
+        alpha: 0,
+        beta: 0,
+        theta: 0,
+        baRatio: 0,
+        state: inferred,
+        method: 'Cognitive Self-Assessment',
+        confidence: 0.95,
       });
 
       if (sessRes?.id) {
@@ -221,9 +245,14 @@ export default function SelfAssessment() {
 
       // Online update
       const updateRes = await api.updateClassifier({
-        attention: 50, meditation: 50,
-        alpha: 15, beta: 10, theta: 10, baRatio: 0.67,
-        trueState: inferred, feedbackScore: discomfort,
+        attention: 50,
+        meditation: 50,
+        alpha: 15,
+        beta: 10,
+        theta: 10,
+        baRatio: 0.67,
+        trueState: inferred,
+        feedbackScore: discomfort,
       });
 
       if (updateRes?.dynamicAccuracy) {
@@ -286,6 +315,8 @@ export default function SelfAssessment() {
     return resultVerse.sanskrit;
   };
 
+  const exercises = CLINICAL_EXERCISES[diagnosedState] || CLINICAL_EXERCISES['EQUILIBRIUM (Sattva)'];
+
   return (
     <>
       <button className="back-to-dash" onClick={() => navigate('/')}>
@@ -305,14 +336,14 @@ export default function SelfAssessment() {
           <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: step === 2 ? 'var(--primary)' : step > 2 ? 'var(--sage)' : 'var(--border)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.78rem', fontWeight: 700 }}>
             2
           </span>
-          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: step === 2 ? 'var(--primary)' : 'var(--text-secondary)' }}>Cognitive Questions & Symptoms</span>
+          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: step === 2 ? 'var(--primary)' : 'var(--text-secondary)' }}>Targeted Questions & Symptoms</span>
         </div>
         <span style={{ color: 'var(--border)' }}>&rarr;</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: step >= 3 ? 1 : 0.4 }}>
           <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: step === 3 ? 'var(--primary)' : 'var(--border)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.78rem', fontWeight: 700 }}>
             3
           </span>
-          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: step === 3 ? 'var(--primary)' : 'var(--text-secondary)' }}>Result Analysis</span>
+          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: step === 3 ? 'var(--primary)' : 'var(--text-secondary)' }}>Clinical Report & Exercises</span>
         </div>
       </div>
 
@@ -325,7 +356,7 @@ export default function SelfAssessment() {
         <div className="card" style={{ maxWidth: 700, margin: '0 auto 3rem', padding: '2rem' }}>
           <div className="page-header" style={{ marginBottom: '1.25rem', padding: 0 }}>
             <h1 style={{ fontSize: '1.6rem' }}>How are you feeling right now?</h1>
-            <p>Briefly describe your current thoughts, physical tension, or emotional struggle in your own words.</p>
+            <p>Briefly describe your current thoughts, physical sensations, or emotional challenges in your own words.</p>
           </div>
 
           <form onSubmit={handleProceedToQuestions}>
@@ -333,7 +364,7 @@ export default function SelfAssessment() {
               <textarea
                 className="form-control"
                 rows={6}
-                placeholder="Example: I have a major deadline tomorrow and my heart feels like it's racing. I'm struggling to concentrate and overthinking what might go wrong..."
+                placeholder="Example: I have an important test tomorrow and I can't stop overthinking. My chest feels tight, and I can't focus on studying..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 autoFocus
@@ -344,7 +375,7 @@ export default function SelfAssessment() {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button type="submit" className="btn btn-primary" style={{ padding: '10px 24px', fontSize: '0.95rem' }}>
-                Continue to Analysis &rarr;
+                Continue to Diagnostic Questions &rarr;
               </button>
             </div>
           </form>
@@ -352,19 +383,19 @@ export default function SelfAssessment() {
       )}
 
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* PART 2: DYNAMIC QUESTIONS + SYMPTOMS + OTHER BOX                   */}
+      {/* PART 2: DYNAMIC QUESTIONS (NOT PRECHECKED) + SYMPTOMS + OTHER BOX  */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       {step === 2 && (
         <form onSubmit={handleFinalSubmit}>
           <div className="page-header" style={{ marginBottom: '1.5rem' }}>
-            <h1>Cognitive Assessment & Symptom Analysis</h1>
-            <p>Based on your description, answer the following targeted questions and select your physical symptoms.</p>
+            <h1>Targeted Cognitive Assessment</h1>
+            <p>Answer the clinical follow-up questions generated from your description, select symptoms, and add any other details.</p>
           </div>
 
           {/* User's Original Problem Summary */}
           <div className="card-subtle" style={{ marginBottom: '1.5rem', background: 'rgba(76,114,255,0.06)', border: '1px solid rgba(76,114,255,0.2)', padding: '12px 18px' }}>
             <span style={{ fontSize: '0.78rem', textTransform: 'uppercase', color: 'var(--primary)', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
-              Your Initial Description:
+              Your Problem Statement:
             </span>
             <span style={{ fontStyle: 'italic', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
               "{description}"
@@ -372,24 +403,25 @@ export default function SelfAssessment() {
           </div>
 
           <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
-            {/* Left Column: Dynamic LLM Questions */}
+            {/* Left Column: Targeted Cognitive Questions (Unchecked) */}
             <div className="card">
-              <div className="section-label">TARGETED COGNITIVE QUESTIONS</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div className="section-label">TARGETED CLINICAL QUESTIONS</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.35rem' }}>
                 {dynamicQuestions.map((q, idx) => (
                   <div key={q.id}>
-                    <label style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', display: 'block', marginBottom: '0.45rem' }}>
+                    <label style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', display: 'block', marginBottom: '0.5rem' }}>
                       {idx + 1}. {q.text}
                     </label>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                       {q.options.map(opt => (
                         <label
                           key={opt}
                           style={{
-                            display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.84rem',
-                            padding: '6px 10px', borderRadius: '8px', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.84rem',
+                            padding: '7px 11px', borderRadius: '8px', cursor: 'pointer',
                             background: answers[q.id] === opt ? 'rgba(76,114,255,0.12)' : 'var(--bg-subtle)',
                             border: answers[q.id] === opt ? '1px solid var(--primary)' : '1px solid var(--border)',
+                            transition: 'all 0.15s ease',
                           }}
                         >
                           <input
@@ -406,16 +438,16 @@ export default function SelfAssessment() {
                 ))}
               </div>
 
-              {/* Additional / Other Details Box */}
+              {/* Other / Additional Details Box */}
               <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border)', paddingTop: '1.25rem' }}>
                 <div className="section-label">OTHER / ADDITIONAL DETAILS</div>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                  If the questions above do not fully capture your analysis or specific condition, add more input below:
+                  If the above questions did not fully capture your analysis or specific condition, add extra input below:
                 </p>
                 <textarea
                   className="form-control"
                   rows={3}
-                  placeholder="Specify any extra triggers, sensations, medications, or details..."
+                  placeholder="Type any additional context, specific triggers, or feelings that weren't covered..."
                   value={additionalNotes}
                   onChange={(e) => setAdditionalNotes(e.target.value)}
                 />
@@ -469,24 +501,24 @@ export default function SelfAssessment() {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginBottom: '3rem' }}>
             <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}>
-              &larr; Edit Description
+              &larr; Back to Problem Description
             </button>
             <button type="submit" className="btn btn-primary" disabled={loading} style={{ padding: '10px 24px' }}>
-              {loading ? 'Analyzing & Recalibrating ML...' : 'Analyze & Generate Vedantic Prescription \u2192'}
+              {loading ? 'Analyzing & Compiling Report...' : 'Analyze Symptoms & Generate Clinical Report \u2192'}
             </button>
           </div>
         </form>
       )}
 
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* PART 3: RESULT ANALYSIS & MULTILINGUAL VEDANTIC REMEDY             */}
+      {/* PART 3: CLINICAL REPORT (EXERCISES, SUGGESTIONS & VEDANTIC REMEDY) */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       {step === 3 && (
         <>
           <div className="page-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
-              <h1>Diagnostic Result & Vedantic Prescription</h1>
-              <p>Your multi-stage cognitive evaluation has been processed and incorporated into the online training engine.</p>
+              <h1>Clinical Cognitive Assessment & Remediation Report</h1>
+              <p>Tailored exercises, behavioral suggestions, and Vedantic grounding based on your self-assessment.</p>
             </div>
 
             {/* Multilingual Switcher: English, Hindi, Bengali, Hinglish */}
@@ -506,7 +538,7 @@ export default function SelfAssessment() {
                 onClick={() => setLang('hi')}
                 style={{ fontSize: '0.78rem', padding: '3px 9px' }}
               >
-                हिन्दी (Hindi)
+                हिन्दी
               </button>
               <button
                 type="button"
@@ -514,7 +546,7 @@ export default function SelfAssessment() {
                 onClick={() => setLang('bn')}
                 style={{ fontSize: '0.78rem', padding: '3px 9px' }}
               >
-                বাংলা (Bengali)
+                বাংলা
               </button>
               <button
                 type="button"
@@ -532,7 +564,7 @@ export default function SelfAssessment() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
                 <div style={{ fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 700 }}>
-                  AI-DIAGNOSED PSYCHOPHYSIOLOGICAL STATE
+                  AI-DIAGNOSED PSYCHOPHYSIOLOGICAL PROFILE
                 </div>
                 <h2 style={{ margin: '4px 0 0', color: 'var(--primary)', fontSize: '1.4rem' }}>
                   {diagnosedState}
@@ -540,26 +572,59 @@ export default function SelfAssessment() {
               </div>
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
                 <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '10px', padding: '6px 14px' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>Discomfort</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>Reported Discomfort</span>
                   <strong style={{ color: 'var(--text-primary)', fontSize: '1rem' }}>{discomfort} / 5</strong>
                 </div>
                 <div style={{ background: '#fff', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '10px', padding: '6px 14px' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--sage)', display: 'block', fontWeight: 700 }}>Live Model Accuracy</span>
-                  <strong style={{ color: 'var(--sage)', fontSize: '1rem' }}>{newAccuracy}% (Self-Tuned)</strong>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--sage)', display: 'block', fontWeight: 700 }}>Model Dynamic Accuracy</span>
+                  <strong style={{ color: 'var(--sage)', fontSize: '1rem' }}>{newAccuracy}% (Self-Calibrated)</strong>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Result Grid */}
+          {/* Section 1: Prescribed Exercises & Actionable Suggestions */}
+          <div className="card" style={{ marginBottom: '1.5rem', borderLeft: '4px solid var(--sage)' }}>
+            <div className="section-label" style={{ color: 'var(--sage)' }}>RECOMMENDED CLINICAL EXERCISES & SUGGESTIONS</div>
+            <div className="grid-3" style={{ gap: '1rem', marginTop: '0.75rem' }}>
+              <div className="card-subtle">
+                <strong style={{ color: 'var(--primary)', display: 'block', marginBottom: '0.4rem', fontSize: '0.9rem' }}>
+                  🫁 Somatic Breathing Exercise
+                </strong>
+                <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                  {exercises.somaticExercise}
+                </p>
+              </div>
+
+              <div className="card-subtle">
+                <strong style={{ color: 'var(--primary)', display: 'block', marginBottom: '0.4rem', fontSize: '0.9rem' }}>
+                  🧠 Cognitive Re-framing Exercise
+                </strong>
+                <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                  {exercises.cognitiveExercise}
+                </p>
+              </div>
+
+              <div className="card-subtle">
+                <strong style={{ color: 'var(--primary)', display: 'block', marginBottom: '0.4rem', fontSize: '0.9rem' }}>
+                  🌿 Lifestyle & Environment Suggestion
+                </strong>
+                <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                  {exercises.lifestyleSuggestion}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Summary + Prescribed Vedantic Remedy */}
           <div className="grid-2" style={{ marginBottom: '2rem' }}>
-            {/* Left Column: Clinical Profile Summary */}
+            {/* Left Column: Logged Profile Details */}
             <div className="card">
-              <div className="section-label">ASSESSMENT SUMMARY & OBSERVATIONS</div>
+              <div className="section-label">PATIENT REPORT PROFILE</div>
               
               <div style={{ marginBottom: '1rem' }}>
                 <strong style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                  Initial Problem Description:
+                  Reported Problem Description:
                 </strong>
                 <div className="card-subtle" style={{ fontSize: '0.88rem' }}>
                   "{description}"
@@ -568,7 +633,7 @@ export default function SelfAssessment() {
 
               <div style={{ marginBottom: '1rem' }}>
                 <strong style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>
-                  Selected Symptoms ({symptoms.length}):
+                  Recorded Symptoms ({symptoms.length}):
                 </strong>
                 {symptoms.length > 0 ? (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
@@ -586,7 +651,7 @@ export default function SelfAssessment() {
               {additionalNotes && (
                 <div style={{ marginBottom: '1rem' }}>
                   <strong style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                    Additional / Other Input:
+                    Additional Patient Notes:
                   </strong>
                   <div className="card-subtle" style={{ fontSize: '0.88rem' }}>
                     {additionalNotes}
@@ -596,7 +661,7 @@ export default function SelfAssessment() {
 
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '1rem' }}>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                  ✓ <strong>Session Logged:</strong> Session #{savedSessionId || 'Active'} saved to local SQLite database with 100% data privacy.
+                  ✓ <strong>Session Saved:</strong> Session #{savedSessionId || 'Active'} logged to your private medical history.
                 </div>
               </div>
             </div>
@@ -634,7 +699,7 @@ export default function SelfAssessment() {
                 {/* Translation */}
                 <div className="translation-block" style={{ marginBottom: '1rem', fontSize: '0.88rem' }}>
                   <strong>
-                    {lang === 'hi' ? 'सीधा अर्थ (भावार्थ):' : lang === 'bn' ? 'বঙ্গানুবাদ ও ভাবার্থ:' : lang === 'hl' ? 'Direct Meaning (Bhavarth):' : 'Direct Translation:'}
+                    {lang === 'hi' ? 'सीधा अर्थ (भावार्थ):' : lang === 'bn' ? 'বঙ্গানুবাদ ও ভাবার্থ:' : lang === 'hl' ? 'Direct Meaning (Bhavarth):' : 'Direct Meaning:'}
                   </strong>
                   <br />
                   {getTranslation()}
@@ -642,7 +707,7 @@ export default function SelfAssessment() {
 
                 {/* 3-Step Somatic Grounding */}
                 <div className="section-label" style={{ marginTop: '1rem' }}>
-                  {lang === 'hi' ? '3-चरणीय दैहिक स्थिरता अभ्यास' : lang === 'bn' ? '৩-পর্যায়ের মানসিক ও দৈহিক প্রশান্তি অনুশীলন' : lang === 'hl' ? '3-STAGE SOMATIC GROUNDING (STHIRATA ABHYAS)' : '3-STAGE SOMATIC GROUNDING TRAJECTORY'}
+                  {lang === 'hi' ? '3-चरणीय स्थिरता अभ्यास' : lang === 'bn' ? '৩-পর্যায়ের মানসিক প্রশান্তি অনুশীলন' : lang === 'hl' ? '3-STAGE SOMATIC GROUNDING (STHIRATA ABHYAS)' : '3-STAGE SOMATIC GROUNDING TRAJECTORY'}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {getGroundingSteps().map((step, i) => (
@@ -664,7 +729,7 @@ export default function SelfAssessment() {
               Submit Another Assessment
             </button>
             <button className="btn btn-secondary" onClick={() => navigate('/sessions')}>
-              View Session History
+              View in Session History
             </button>
             <button className="btn btn-secondary" onClick={() => navigate('/')}>
               Back to Dashboard

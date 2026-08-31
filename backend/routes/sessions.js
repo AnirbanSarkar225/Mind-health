@@ -32,16 +32,27 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/sessions — list user sessions
+// GET /api/sessions — list user sessions with joined problem & feedback details
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit || '50');
+    const limit = parseInt(req.query.limit || '100');
     const result = await query(
-      `SELECT * FROM sessions WHERE user_id = ? ORDER BY created_at DESC LIMIT ?`,
+      `SELECT s.*, 
+              p.description as problem_description, 
+              p.symptoms as problem_symptoms, 
+              p.discomfort_level as problem_discomfort,
+              f.notes as feedback_notes
+       FROM sessions s
+       LEFT JOIN problems p ON p.session_id = s.id
+       LEFT JOIN feedback f ON f.session_id = s.id
+       WHERE s.user_id = ? 
+       ORDER BY s.created_at DESC 
+       LIMIT ?`,
       [req.user.id, limit]
     );
     res.json({ sessions: result.rows });
   } catch (e) {
+    console.error('Fetch sessions error:', e);
     res.status(500).json({ error: 'Failed to fetch sessions.' });
   }
 });

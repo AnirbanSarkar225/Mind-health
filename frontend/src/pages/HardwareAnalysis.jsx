@@ -38,6 +38,8 @@ export default function HardwareAnalysis() {
     });
   };
 
+  const [savedMessage, setSavedMessage] = useState('');
+
   const runClassification = async () => {
     try {
       const result = await api.classify({
@@ -50,6 +52,21 @@ export default function HardwareAnalysis() {
         useML,
       });
       setClassification(result);
+
+      // Save the EXACT LIVE SENSOR READINGS to session database
+      await api.saveSessions({
+        attention: signals.attention,
+        meditation: signals.meditation,
+        alpha: signals.alpha,
+        beta: signals.beta,
+        theta: signals.theta,
+        baRatio: signals.baRatio,
+        state: result.state,
+        method: result.method || 'BioAmp Hardware Stream',
+        confidence: result.confidence || 0.85,
+      });
+      setSavedMessage('✓ Live hardware sensor recording saved to session history');
+      setTimeout(() => setSavedMessage(''), 4000);
     } catch (e) {
       console.error(e);
     }
@@ -82,9 +99,16 @@ export default function HardwareAnalysis() {
           <SliderInput label="Beta Power (μV)" min={1} max={50} value={signals.beta} onChange={v => updateSignal('beta', v)} />
           <SliderInput label="Theta Power (μV)" min={1} max={50} value={signals.theta} onChange={v => updateSignal('theta', v)} />
         </div>
-        <button className="btn btn-primary" onClick={runClassification} style={{ marginTop: '0.5rem' }}>
-          Analyze EEG Biosignals
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <button className="btn btn-primary" onClick={runClassification}>
+            Analyze EEG Biosignals
+          </button>
+          {savedMessage && (
+            <span style={{ color: 'var(--sage)', fontWeight: 700, fontSize: '0.85rem' }}>
+              {savedMessage}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Telemetry Gauges */}

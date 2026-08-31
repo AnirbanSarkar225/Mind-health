@@ -2,40 +2,229 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 
+// Clinical exercises by state
+const CLINICAL_EXERCISES = {
+  'ACUTE ANXIETY (Visada)': {
+    somatic: '4-4-6 Extended Exhalation Breathing — Inhale 4s, hold 4s, exhale slowly 6s. Repeat 5 cycles to stimulate the vagus nerve.',
+    cognitive: 'Circle of Control — Note 3 uncontrollable outcomes and cross them out; commit to 1 immediate actionable effort.',
+    lifestyle: '15-minute complete digital screen pause. Drink a glass of warm water slowly.',
+  },
+  'DEPRESSION / LETHARGY (Tamas)': {
+    somatic: 'Postural Expansion & Dynamic Movement — Stand tall, open chest cavity, take 10 expansive breaths, walk for 3 minutes.',
+    cognitive: 'The 2-Minute Micro-Victory Rule — Complete one small task (e.g. make bed, wash cup) and celebrate it as an intentional win.',
+    lifestyle: 'Get 10 minutes of direct morning sunlight. Splash cold water on your face.',
+  },
+  'STRESS & AGITATION (Krodha)': {
+    somatic: 'Sitali Cooling Breath & Palm Press — Inhale cooling breath through teeth/curled tongue; press palms together for 10s to interrupt anger loop.',
+    cognitive: '90-Second Impulse Buffer — Step back from the trigger for 90s to allow autonomic adrenaline spikes to metabolize.',
+    lifestyle: 'Perform progressive shoulder rolls and unclench your jaw. Avoid stimulants for 4 hours.',
+  },
+  'EQUILIBRIUM (Sattva)': {
+    somatic: 'Alpha Coherence Meditation — Observe gentle rise and fall of breath at the tip of nostrils for 3 minutes.',
+    cognitive: 'Sakshi-Bhava (Witness State) — Observe passing emotions without impulsive clinging or reactivity.',
+    lifestyle: 'Reinforce calm by writing down one insight or sharing an encouraging word with someone.',
+  },
+};
+
+// Gita Verses Knowledge Base with Multilingual Translations
+const GITA_VERSES = {
+  'ACUTE ANXIETY (Visada)': {
+    chapter: 2, verse: 47,
+    concept: 'Nishkama Karma',
+    concept_hi: 'निष्काम कर्म (Nishkama Karma)',
+    concept_bn: 'নিষ্কাম কর্ম (Nishkama Karma)',
+    concept_hl: 'Nishkama Karma (Bina Phal Ki Chinta Kiye Karm)',
+    sanskrit: 'कर्मण्येवाधिकारस्ते मा फलेषु कदाचन ।\nमा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि ॥',
+    sanskritBengali: 'কর্মণ্যেবাধিকারস্তে মা ফলেষু কদাচন।\nমা কর্মফলহেতুর্ভুর্মা তে সঙ্গোঽস্ত্বকৰ্মণি॥',
+    transliteration: "karmanhy evadhikaras te ma phaleshu kadachana\nma karma-phala-hetur bhur ma te sango 'stv akarmani",
+    translation: 'You have the right to perform your duty, but you are not entitled to the fruits of your actions. Never consider yourself the cause of results, and never be attached to inaction.',
+    translation_hi: 'तुम्हारा अधिकार केवल कर्म करने में है, उसके फलों में कभी नहीं। इसलिए कर्मफल के कारण मत बनो और न ही कर्म न करने में तुम्हारी आसक्ति हो।',
+    translation_bn: 'কর্মে তোমার অধিকার আছে, কিন্তু কর্মফলে কখনো অধিকার নেই। অতএব কর্মফলের হেতু হয়ো না এবং কর্মত্যাগেও তোমার যেন আসক্তি না থাকে।',
+    translation_hl: 'Aapka adhikaar sirf karm karne mein hai, uske phal par kabhi nahi. Isliye phal ki chinta karke karm mat roko aur na hi aalas mein phaso.',
+    groundingSteps: [
+      'BREATHE — Close eyes. Inhale 4s, hold 4s, exhale 6s. Repeat 5 cycles.',
+      'RE-FRAME — Write: "I control the effort, not the result." Read it aloud.',
+      'ACT — Pick one task you have been avoiding. Work on it for 10 minutes without perfection pressure.',
+    ],
+    groundingSteps_hi: [
+      'प्राणायाम — 4 सेकंड सांस लें, 4 सेकंड रोकें, 6 सेकंड छोड़ें। 5 बार दोहराएं।',
+      'सकारात्मक विचार — लिखें: "मेरा नियंत्रण केवल प्रयास पर है, परिणाम पर नहीं।"',
+      'कर्म — किसी एक छोटे काम को 10 मिनट तक बिना चिंता किए पूरा करें।',
+    ],
+    groundingSteps_bn: [
+      'শ্বাসপ্রশ্বাস — ৪ সেকেন্ড শ্বাস নিন, ৪ সেকেন্ড ধরে রাখুন, ৬ সেকেন্ডে ছাড়ুন। ৫ বার করুন।',
+      'চিন্তার পরিবর্তন — মনে রাখুন: "আমার নিয়ন্ত্রণ শুধু আমার প্রচেষ্টায়, ফলাফলে নয়।"',
+      'কর্ম সম্পাদন — যে কাজটি করতে ভয় পাচ্ছেন তা ১০ মিনিটের জন্য শুরু করুন।',
+    ],
+    groundingSteps_hl: [
+      'SAANS LEIN — 4s saans andar lein, 4s rokein, 6s mein chhodein. 5 baar karein.',
+      'THOUGHT REFRAME — Kahein: "Mera control sirf meri mehnat par hai, outcome par nahi."',
+      'ACTION LEIN — Ek chhota task bina perfection ki chinta ke 10 min karein.',
+    ],
+  },
+  'DEPRESSION / LETHARGY (Tamas)': {
+    chapter: 6, verse: 5,
+    concept: 'Atma-Uddhara (Self-Elevation)',
+    concept_hi: 'आत्मोद्धार एवं आत्म-शक्ति (Atma-Uddhara)',
+    concept_bn: 'আত্মোদ্ধার ও আত্মশক্তি (Atma-Uddhara)',
+    concept_hl: 'Atma-Uddhara (Khud Ko Uthana Aur Aage Badhana)',
+    sanskrit: 'उद्धरेदात्मनात्मानं नात्मानमवसादयेत् ।\nआत्मैव ह्यात्मनो बन्धुरात्मैव रिपुरात्मनः ॥',
+    sanskritBengali: 'উদ্ধরেদাত্মনাত্মানং নাত্মানমবসাদয়েৎ।\nআত্মৈব হ্যাত্মনো বন্ধুরত্মৈব রিপুরাত্মনঃ॥',
+    transliteration: 'uddhared atmanatmanam natmanam avasadayet\natmaiva hy atmano bandhur atmaiva ripur atmanah',
+    translation: 'Elevate yourself through the power of your own mind, and do not degrade yourself. The mind can be the friend and also the enemy of the self.',
+    translation_hi: 'मनुष्य को चाहिए कि वह अपने मन द्वारा अपना उद्धार करे, अपने आपको नीचे न गिरने दे। क्योंकि मन ही जीवात्मा का सच्चा मित्र है और मन ही उसका शत्रु भी है।',
+    translation_bn: 'নিজের মন দ্বারা নিজেকে উন্নত করো, নিজেকে অবসাদগ্রস্ত বা অধঃপতিত করো না। কারণ মনই নিজের পরম বন্ধু এবং মনই নিজের চরম শত্রু।',
+    translation_hl: 'Apne man ki shakti se khud ka uddhar karein, khud ko giraane na dein. Kyunki man hi aapka sabse bada dost hai aur man hi sabse bada dushman.',
+    groundingSteps: [
+      'MORNING ANCHOR — Place feet firmly on the ground. Say: "I am my own ally."',
+      'MICRO-VICTORY — Complete one tiny task (drink water, make bed) and mark it a win.',
+      'CONNECTION — Reach out to one friend or family member today. You are not alone.',
+    ],
+    groundingSteps_hi: [
+      'आत्म-संकल्प — कहें: "मैं स्वयं का मित्र हूँ। मैं आज प्रगति चुनता हूँ।"',
+      'लघु-सफलता — एक छोटा काम पूरा करें (पानी पीना, 2 मिनट खुली हवा में जाना)।',
+      'सम्पर्क — आज किसी एक प्रियजन से बात करें या संदेश भेजें।',
+    ],
+    groundingSteps_bn: [
+      'আত্ম-জাগরণ — বলুন: "আমি নিজেই আমার সবচেয়ে বড় শক্তি। আজ আমি অবসাদ মুক্ত হব।"',
+      'ক্ষুদ্র বিজয় — যেকোনো একটি ছোট কাজ সম্পূর্ণ করুন (যেমন এক গ্লাস জল খাওয়া)।',
+      'যোগাযোগ — পরিচিত কারো সাথে সামান্য কথা বলুন বা বার্তা পাঠান।',
+    ],
+    groundingSteps_hl: [
+      'MORNING ANCHOR — Kahein: "Main khud ka saathi hoon, main aaj aage badhoonga."',
+      'MICRO-VICTORY — Ek chhota task poora karein aur isse apni jeet maanein.',
+      'CONNECTION — Aaj kisi ek dost ya family member ko call ya message karein.',
+    ],
+  },
+  'STRESS & AGITATION (Krodha)': {
+    chapter: 2, verse: 63,
+    concept: 'Indriya-Nigraha (Sensory Calming)',
+    concept_hi: 'इन्द्रिय-निग्रह एवं शांति (Indriya-Nigraha)',
+    concept_bn: 'ইন্দ্রিয় সংযম ও প্রশান্তি (Indriya-Nigraha)',
+    concept_hl: 'Indriya-Nigraha (Gusse Aur Tension Ko Shaant Karna)',
+    sanskrit: 'क्रोधाद्भवति सम्मोहः सम्मोहात्स्मृतिविभ्रमः ।\nस्मृतिभ्रंशाद् बुद्धिनाशो बुद्धिनाशात्प्रणश्यति ॥',
+    sanskritBengali: 'ক্রোধাদ্ভবতি সংমোহঃ সংমোহাৎস্মৃতিবিভ্রমঃ।\nস্মৃতিভ্রংশাদ বুদ্ধিনাশো বুদ্ধিনাশাৎপ্রণশ্যতি॥',
+    transliteration: 'krodhad bhavati sammohah sammohat smriti-vibhramah\nsmriti-bhramsad buddhi-nasho buddhi-nashat pranashyati',
+    translation: 'From anger arises delusion; from delusion, confusion of memory; from confusion of memory, loss of reason; and from loss of reason, one falls into ruin.',
+    translation_hi: 'क्रोध से अविवेक उत्पन्न होता है, अविवेक से स्मृति भ्रमित होती है, स्मृति-भ्रम से बुद्धि का नाश होता है और बुद्धि नष्ट होने से मनुष्य का पतन हो जाता है।',
+    translation_bn: 'ক্রোধ থেকে বিচারহীনতা জন্ম নেয়, তা থেকে স্মৃতিবিভ্রম ঘটে, স্মৃতিভ্রষ্ট হলে বুদ্ধিনাশ ঘটে এবং বুদ্ধি নষ্ট হলে মানুষের পতন ঘটে।',
+    translation_hl: 'Gusse se samajh khatam hoti hai, samajh khone se memory bhatak jaati hai, aur memory bhatakne se buddhi ka nash hota hai jisse insaan gir jaata hai.',
+    groundingSteps: [
+      'PAUSE — Stop immediately. Press palms together firmly for 10 seconds.',
+      '5-4-3-2-1 GROUNDING — Name 5 things you see, 4 touch, 3 hear, 2 smell, 1 taste.',
+      'DHYANA RESET — Take 10 slow diaphragmatic breaths to reset nervous system.',
+    ],
+    groundingSteps_hi: [
+      'विराम — तुरंत रुकें और दोनों हथेलियों को 10 सेकंड तक आपस में दबाएं।',
+      'इन्द्रिय-केंद्रण — 5 चीज़ें देखें, 4 स्पर्श करें, 3 सुनें, 2 सूंघें, 1 स्वाद महसूस करें।',
+      'ध्यान — 10 गहरी सांसें लेकर तंत्रिका तंत्र को पुनः संतुलित करें।',
+    ],
+    groundingSteps_bn: [
+      'স্থিরতা — সাথে সাথে থামুন। ১০ সেকেন্ডের জন্য দুই হাতের তালু একসাথে চাপুন।',
+      'ইন্দ্রিয় সচেতনতা — ৫টি জিনিস দেখুন, ৪টি স্পর্শ করুন, ৩টি শুনুন, ২টি গন্ধ নিন, ১টি স্বাদ নিন।',
+      'গভীর শ্বাস — ধীরে ধীরে ১০টি দীর্ঘ শ্বাস নিয়ে শরীরকে শান্ত করুন।',
+    ],
+    groundingSteps_hl: [
+      'PAUSE — Turant rukein. Dono hatho ko 10s zor se press karein.',
+      '5-4-3-2-1 GROUNDING — 5 cheezein dekhein, 4 touch karein, 3 sunein, 2 smell, 1 taste.',
+      'DHYANA RESET — 10 gehri saansein lein aur nervous system ko shaant karein.',
+    ],
+  },
+  'EQUILIBRIUM (Sattva)': {
+    chapter: 2, verse: 56,
+    concept: 'Sthitaprajna (Steady Wisdom)',
+    concept_hi: 'स्थितप्रज्ञ (अटल समत्व) (Sthitaprajna)',
+    concept_bn: 'স্থিতপ্রজ্ঞ (স্থির প্রজ্ঞা) (Sthitaprajna)',
+    concept_hl: 'Sthitaprajna (Har Haalat Mein Shaant Rehna)',
+    sanskrit: 'दुःखेष्वनुद्विग्नमनाः सुखेषु विगतस्पृहः ।\nवीतरागभयक्रोधः स्थितधीर्मुनिरुच्यते ॥',
+    sanskritBengali: 'দুঃখেষ্বনুদ্ধিগ্নমনাঃ সুখেষু বিগতস্পৃহঃ।\nবীতরাগভয়ক্রোধঃ স্থিতধীর্যুনিরুচ্যতে॥',
+    transliteration: 'duhkheshv anudvigna-manah sukheshu vigata-sprhah\nvita-raga-bhaya-krodhah sthita-dhir munir ucyate',
+    translation: 'One whose mind remains undisturbed amidst sorrow, who does not crave pleasure, and who is free from attachment, fear, and anger — such a person is called a sage of steady wisdom.',
+    translation_hi: 'जो दुःखों में उद्विग्न नहीं होता, सुखों में निःस्पृह रहता है, तथा जिसके राग, भय और क्रोध नष्ट हो चुके हैं, वह स्थिर बुद्धि वाला मुनि कहलाता है।',
+    translation_bn: 'দুঃখে যার মন উদ্বিগ্ন হয় না, সুখে যার আসক্তি নেই এবং যিনি ভয় ও ক্রোধ থেকে মুক্ত — তিনিই স্থিতপ্রজ্ঞ অর্থাৎ স্থির বুদ্ধিসম্পন্ন পুরুষ।',
+    translation_hl: 'Jo dukh mein ghabrata nahi, sukh mein behakta nahi, aur jiske man se dar, gussa aur attachment khatam ho chuka hai — wahi sthir buddhi wala hai.',
+    groundingSteps: [
+      'GRATITUDE PAUSE — Close eyes and list 3 things you are grateful for right now.',
+      'WITNESS STATE — Observe external events calmly without emotional clinging.',
+      'SHARE PEACE — Share a positive, encouraging word with someone nearby.',
+    ],
+    groundingSteps_hi: [
+      'कृतज्ञता — 3 ऐसी बातों का स्मरण करें जिनके प्रति आप आभारी हैं।',
+      'साक्षी भाव — घटनाओं को शांत साक्षी बनकर देखें।',
+      'शांति प्रसार — किसी के साथ मधुर व सकारात्मक व्यवहार साझा करें।',
+    ],
+    groundingSteps_bn: [
+      'কৃতজ্ঞতা প্রকাশ — ৩টি বিষয়ের কথা স্মরণ করুন যার জন্য আপনি কৃতজ্ঞ।',
+      'সাক্ষী ভাব — জীবনের ঘটনাগুলোকে স্থিরভাবে অবলোকন করুন।',
+      'প্রশান্তি ছড়িয়ে দিন — অপরের সাথে একটি সুন্দর হাসি ভাগ করে নিন।',
+    ],
+    groundingSteps_hl: [
+      'GRATITUDE PAUSE — 3 aisi cheezein sochein jinke liye aap thankful hain.',
+      'SAKSHI BHAV — Zindagi ke events ko ek shaant observer bankar dekhein.',
+      'SHANTI SPREAD — Kisi ke saath ek positive gesture share karein.',
+    ],
+  },
+};
+
 export default function SessionHistory() {
   const navigate = useNavigate();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Selected session for detailed inspection modal
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [modalLang, setModalLang] = useState('en');
+
   useEffect(() => {
     api.getSessions(100)
-      .then(d => setSessions(d.sessions))
+      .then(d => setSessions(d.sessions || []))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
   const total = sessions.length;
-  const avgBAR = total > 0 ? (sessions.reduce((a, s) => a + (s.beta_alpha_ratio || 0), 0) / total).toFixed(2) : '0.00';
+
+  // Filter hardware sessions vs self-assessment sessions
+  const hardwareSessions = sessions.filter(s => !s.classifier_method?.toLowerCase().includes('self'));
+  const hwCount = hardwareSessions.length;
+  const avgBAR = hwCount > 0 ? (hardwareSessions.reduce((a, s) => a + (s.beta_alpha_ratio || 0), 0) / hwCount).toFixed(2) : '0.00';
   const avgConf = total > 0 ? (sessions.reduce((a, s) => a + (s.confidence || 0), 0) / total * 100).toFixed(1) : '0.0';
 
   const dist = {};
   sessions.forEach(s => { dist[s.detected_state] = (dist[s.detected_state] || 0) + 1; });
 
   const exportCSV = () => {
-    const headers = 'Date,Attention,Alpha,Beta,Theta,BA_Ratio,State,Method,Confidence\n';
-    const rows = sessions.map(s =>
-      `${new Date(s.created_at).toISOString()},${s.eeg_attention},${s.alpha_power},${s.beta_power},${s.theta_power},${s.beta_alpha_ratio},${s.detected_state},${s.classifier_method},${s.confidence}`
-    ).join('\n');
+    const headers = 'Date,Session_Type,Attention,Alpha,Beta,Theta,BA_Ratio,State,Method,Confidence,Problem_Description\n';
+    const rows = sessions.map(s => {
+      const isSelf = s.classifier_method?.toLowerCase().includes('self');
+      const type = isSelf ? 'Cognitive Self-Assessment' : 'BioAmp Hardware Stream';
+      const att = isSelf ? 'N/A' : s.eeg_attention;
+      const a = isSelf ? 'N/A' : s.alpha_power;
+      const b = isSelf ? 'N/A' : s.beta_power;
+      const th = isSelf ? 'N/A' : s.theta_power;
+      const bar = isSelf ? 'N/A' : s.beta_alpha_ratio;
+      const desc = `"${(s.problem_description || s.feedback_notes || '').replace(/"/g, '""')}"`;
+      return `${new Date(s.created_at).toISOString()},${type},${att},${a},${b},${th},${bar},${s.detected_state},${s.classifier_method},${s.confidence},${desc}`;
+    }).join('\n');
+
     const blob = new Blob([headers + rows], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `gita-neurosync-eeg-sessions-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `gita-neurosync-session-history-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  if (loading) return <div style={{padding:'2rem',textAlign:'center',color:'var(--text-secondary)'}}>Loading sessions...</div>;
+  const getVerseForSession = (state) => {
+    return GITA_VERSES[state] || GITA_VERSES['EQUILIBRIUM (Sattva)'];
+  };
+
+  const getExercisesForSession = (state) => {
+    return CLINICAL_EXERCISES[state] || CLINICAL_EXERCISES['EQUILIBRIUM (Sattva)'];
+  };
+
+  if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading session history...</div>;
 
   return (
     <>
@@ -43,22 +232,22 @@ export default function SessionHistory() {
         &larr; Dashboard
       </button>
       <div className="page-header">
-        <h1>EEG Session History</h1>
-        <p>Telemetry log with brainwave spectrum classifications, confidence scores, and trend analysis</p>
+        <h1>Session History & Diagnostic Inspector</h1>
+        <p>Click on any session row to inspect comprehensive clinical reports, sensor telemetry, and tailored exercises</p>
       </div>
 
-      {/* Summary */}
+      {/* Summary Stats */}
       <div className="dashboard-stats" style={{ gridTemplateColumns: 'repeat(3,1fr)', marginBottom: '1.5rem' }}>
         <div className="dash-stat-card">
-          <div className="stat-label">Total Sessions</div>
+          <div className="stat-label">Total Logged Sessions</div>
           <div className="stat-value">{total}</div>
         </div>
         <div className="dash-stat-card">
-          <div className="stat-label">Avg Beta/Alpha Ratio</div>
-          <div className="stat-value primary">{avgBAR} <span style={{fontSize:'0.8rem',fontWeight:400}}>ratio</span></div>
+          <div className="stat-label">Avg Hardware BAR Ratio</div>
+          <div className="stat-value primary">{avgBAR} <span style={{ fontSize: '0.8rem', fontWeight: 400 }}>ratio</span></div>
         </div>
         <div className="dash-stat-card">
-          <div className="stat-label">Avg Confidence</div>
+          <div className="stat-label">Avg Diagnostic Confidence</div>
           <div className="stat-value accent">{avgConf}%</div>
         </div>
       </div>
@@ -66,12 +255,12 @@ export default function SessionHistory() {
       {/* State Distribution */}
       {Object.keys(dist).length > 0 && (
         <div className="card" style={{ marginBottom: '1.5rem' }}>
-          <div className="section-label">STATE DISTRIBUTION</div>
+          <div className="section-label">CLINICAL STATE DISTRIBUTION</div>
           {Object.entries(dist).map(([state, count]) => (
             <div className="confidence-bar-item" key={state}>
               <div className="confidence-bar-header">
                 <span>{state}</span>
-                <span style={{fontWeight:700}}>{count} ({total > 0 ? (count / total * 100).toFixed(1) : 0}%)</span>
+                <span style={{ fontWeight: 700 }}>{count} ({total > 0 ? (count / total * 100).toFixed(1) : 0}%)</span>
               </div>
               <div className="confidence-bar-track">
                 <div className="confidence-bar-fill" style={{
@@ -84,17 +273,20 @@ export default function SessionHistory() {
         </div>
       )}
 
-      {/* Export */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+      {/* Export Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+          Tip: Click any session row to inspect full notes, exercises, or sensor details.
+        </span>
         <button className="btn btn-secondary btn-sm" onClick={exportCSV} disabled={total === 0}>
-          Export CSV
+          Export CSV Log
         </button>
       </div>
 
-      {/* Table */}
+      {/* Sessions Table */}
       {total === 0 ? (
         <div className="card-subtle" style={{ textAlign: 'center', padding: '3rem' }}>
-          No sessions recorded yet. Start a reading from the Hardware page.
+          No sessions recorded yet. Start a reading from Hardware Analysis or log a Self-Assessment.
         </div>
       ) : (
         <div className="data-table-wrap">
@@ -102,34 +294,324 @@ export default function SessionHistory() {
             <thead>
               <tr>
                 <th>Date & Time</th>
-                <th>Attention</th>
+                <th>Session Type</th>
+                <th>Diagnosed State</th>
                 <th>Alpha (μV)</th>
                 <th>Beta (μV)</th>
-                <th>Theta (μV)</th>
                 <th>Beta/Alpha</th>
-                <th>State</th>
                 <th>Method</th>
-                <th>Conf</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
-              {sessions.map(s => (
-                <tr key={s.id}>
-                  <td style={{ whiteSpace: 'nowrap' }}>{new Date(s.created_at).toLocaleString().slice(0, 19)}</td>
-                  <td>{s.eeg_attention?.toFixed?.(1) ?? s.eeg_attention}</td>
-                  <td>{s.alpha_power?.toFixed?.(1) ?? s.alpha_power}</td>
-                  <td>{s.beta_power?.toFixed?.(1) ?? s.beta_power}</td>
-                  <td>{s.theta_power?.toFixed?.(1) ?? s.theta_power}</td>
-                  <td>{s.beta_alpha_ratio?.toFixed?.(2) ?? s.beta_alpha_ratio}</td>
-                  <td><span className={`state-badge ${getStateClass(s.detected_state)}`}>{s.detected_state}</span></td>
-                  <td>{s.classifier_method}</td>
-                  <td>{(s.confidence * 100).toFixed(0)}%</td>
-                </tr>
-              ))}
+              {sessions.map(s => {
+                const isSelf = s.classifier_method?.toLowerCase().includes('self');
+                return (
+                  <tr
+                    key={s.id}
+                    onClick={() => setSelectedSession(s)}
+                    style={{ cursor: 'pointer', transition: 'background 0.15s ease' }}
+                    className="clickable-row"
+                  >
+                    <td style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>
+                      {new Date(s.created_at).toLocaleString().slice(0, 19)}
+                    </td>
+                    <td>
+                      {isSelf ? (
+                        <span style={{ background: 'rgba(76,114,255,0.12)', color: 'var(--primary)', padding: '3px 8px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700 }}>
+                          🧠 Self-Assessment
+                        </span>
+                      ) : (
+                        <span style={{ background: 'rgba(16,185,129,0.12)', color: 'var(--sage)', padding: '3px 8px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700 }}>
+                          ⚡ Hardware Stream
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      <span className={`state-badge ${getStateClass(s.detected_state)}`}>
+                        {s.detected_state}
+                      </span>
+                    </td>
+                    <td>
+                      {isSelf ? (
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>—</span>
+                      ) : (
+                        <strong>{s.alpha_power?.toFixed?.(1) ?? s.alpha_power}</strong>
+                      )}
+                    </td>
+                    <td>
+                      {isSelf ? (
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>—</span>
+                      ) : (
+                        <strong>{s.beta_power?.toFixed?.(1) ?? s.beta_power}</strong>
+                      )}
+                    </td>
+                    <td>
+                      {isSelf ? (
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>—</span>
+                      ) : (
+                        <strong>{s.beta_alpha_ratio?.toFixed?.(2) ?? s.beta_alpha_ratio}</strong>
+                      )}
+                    </td>
+                    <td style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                      {s.classifier_method}
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-secondary"
+                        style={{ fontSize: '0.75rem', padding: '3px 8px' }}
+                        onClick={(e) => { e.stopPropagation(); setSelectedSession(s); }}
+                      >
+                        View Details &rarr;
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* SESSION INSPECTOR MODAL                                            */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {selectedSession && (() => {
+        const isSelf = selectedSession.classifier_method?.toLowerCase().includes('self');
+        const verse = getVerseForSession(selectedSession.detected_state);
+        const exercises = getExercisesForSession(selectedSession.detected_state);
+
+        const getConcept = () => {
+          if (modalLang === 'hi') return verse.concept_hi || verse.concept;
+          if (modalLang === 'bn') return verse.concept_bn || verse.concept;
+          if (modalLang === 'hl') return verse.concept_hl || verse.concept;
+          return verse.concept;
+        };
+
+        const getTranslation = () => {
+          if (modalLang === 'hi') return verse.translation_hi || verse.translation;
+          if (modalLang === 'bn') return verse.translation_bn || verse.translation;
+          if (modalLang === 'hl') return verse.translation_hl || verse.translation;
+          return verse.translation;
+        };
+
+        const getGroundingSteps = () => {
+          if (modalLang === 'hi') return verse.groundingSteps_hi || verse.groundingSteps;
+          if (modalLang === 'bn') return verse.groundingSteps_bn || verse.groundingSteps;
+          if (modalLang === 'hl') return verse.groundingSteps_hl || verse.groundingSteps;
+          return verse.groundingSteps;
+        };
+
+        const getSanskrit = () => {
+          if (modalLang === 'bn' && verse.sanskritBengali) return verse.sanskritBengali;
+          return verse.sanskrit;
+        };
+
+        // Parse symptoms safely
+        let symptomsList = [];
+        if (selectedSession.problem_symptoms) {
+          try {
+            symptomsList = typeof selectedSession.problem_symptoms === 'string'
+              ? JSON.parse(selectedSession.problem_symptoms)
+              : selectedSession.problem_symptoms;
+          } catch (e) {
+            symptomsList = selectedSession.problem_symptoms.split(',').map(s => s.trim());
+          }
+        }
+
+        return (
+          <div
+            style={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 9999, padding: '1rem',
+            }}
+            onClick={() => setSelectedSession(null)}
+          >
+            <div
+              className="card"
+              style={{
+                maxWidth: 850, width: '100%', maxHeight: '90vh', overflowY: 'auto',
+                padding: '2rem', borderRadius: '16px', background: '#fff',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.25)', position: 'relative',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--border)', paddingBottom: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '4px' }}>
+                    {isSelf ? (
+                      <span style={{ background: 'rgba(76,114,255,0.12)', color: 'var(--primary)', padding: '3px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700 }}>
+                        🧠 Cognitive Self-Assessment Report
+                      </span>
+                    ) : (
+                      <span style={{ background: 'rgba(16,185,129,0.12)', color: 'var(--sage)', padding: '3px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700 }}>
+                        ⚡ BioAmp Hardware Sensor Telemetry
+                      </span>
+                    )}
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                      #{selectedSession.id?.slice(0, 8)}
+                    </span>
+                  </div>
+                  <h2 style={{ margin: 0, fontSize: '1.4rem' }}>{selectedSession.detected_state}</h2>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                    Recorded on {new Date(selectedSession.created_at).toLocaleString()}
+                  </span>
+                </div>
+
+                {/* Multilingual Switcher & Close */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'var(--bg-subtle)', padding: '3px 6px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                    <button type="button" className={`btn btn-sm ${modalLang === 'en' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setModalLang('en')} style={{ fontSize: '0.72rem', padding: '2px 6px' }}>En</button>
+                    <button type="button" className={`btn btn-sm ${modalLang === 'hi' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setModalLang('hi')} style={{ fontSize: '0.72rem', padding: '2px 6px' }}>हिन्दी</button>
+                    <button type="button" className={`btn btn-sm ${modalLang === 'bn' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setModalLang('bn')} style={{ fontSize: '0.72rem', padding: '2px 6px' }}>বাংলা</button>
+                    <button type="button" className={`btn btn-sm ${modalLang === 'hl' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setModalLang('hl')} style={{ fontSize: '0.72rem', padding: '2px 6px' }}>Hinglish</button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSession(null)}
+                    style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: 'var(--text-secondary)', padding: '0 4px' }}
+                  >
+                    &times;
+                  </button>
+                </div>
+              </div>
+
+              {/* ── CASE A: SELF-ASSESSMENT DETAILS (EXERCISES & SUGGESTIONS) ── */}
+              {isSelf ? (
+                <>
+                  {/* Problem & Symptoms Banner */}
+                  <div className="card-subtle" style={{ marginBottom: '1.25rem', background: 'rgba(76,114,255,0.05)', border: '1px solid rgba(76,114,255,0.15)' }}>
+                    <div style={{ marginBottom: '0.5rem' }}>
+                      <strong style={{ fontSize: '0.85rem', color: 'var(--primary)', display: 'block' }}>Patient Problem Statement:</strong>
+                      <p style={{ margin: '3px 0 0', fontSize: '0.9rem', fontStyle: 'italic', color: 'var(--text-primary)' }}>
+                        "{selectedSession.problem_description || selectedSession.feedback_notes || 'No description recorded.'}"
+                      </p>
+                    </div>
+
+                    {symptomsList.length > 0 && (
+                      <div style={{ marginTop: '0.75rem' }}>
+                        <strong style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                          Reported Symptoms:
+                        </strong>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                          {symptomsList.map(s => (
+                            <span key={s} style={{ background: 'rgba(76,114,255,0.12)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '10px', fontSize: '0.76rem', fontWeight: 600 }}>
+                              ✓ {s}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Recommended Exercises & Suggestions */}
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <div className="section-label" style={{ color: 'var(--sage)' }}>TAILORED CLINICAL EXERCISES & SUGGESTIONS</div>
+                    <div className="grid-3" style={{ gap: '0.75rem', marginTop: '0.5rem' }}>
+                      <div className="card-subtle" style={{ padding: '12px' }}>
+                        <strong style={{ color: 'var(--primary)', fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>
+                          🫁 Somatic Breathing
+                        </strong>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                          {exercises.somatic}
+                        </p>
+                      </div>
+                      <div className="card-subtle" style={{ padding: '12px' }}>
+                        <strong style={{ color: 'var(--primary)', fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>
+                          🧠 Cognitive Reframing
+                        </strong>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                          {exercises.cognitive}
+                        </p>
+                      </div>
+                      <div className="card-subtle" style={{ padding: '12px' }}>
+                        <strong style={{ color: 'var(--primary)', fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>
+                          🌿 Lifestyle Suggestion
+                        </strong>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                          {exercises.lifestyle}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* ── CASE B: HARDWARE ANALYSIS (RECORDED SENSOR TELEMETRY) ── */
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <div className="section-label">ACTUAL RECORDED HARDWARE SENSOR TELEMETRY</div>
+                  <div className="grid-4" style={{ gap: '0.75rem', marginTop: '0.5rem', marginBottom: '1rem' }}>
+                    <div className="metric-card" style={{ padding: '12px' }}>
+                      <div className="metric-label">EEG Attention</div>
+                      <div className="metric-value">{selectedSession.eeg_attention?.toFixed?.(1) ?? selectedSession.eeg_attention}/100</div>
+                    </div>
+                    <div className="metric-card" style={{ padding: '12px' }}>
+                      <div className="metric-label">Alpha Power (8-13Hz)</div>
+                      <div className="metric-value" style={{ color: 'var(--sage)' }}>{selectedSession.alpha_power?.toFixed?.(1) ?? selectedSession.alpha_power} μV</div>
+                    </div>
+                    <div className="metric-card" style={{ padding: '12px' }}>
+                      <div className="metric-label">Beta Power (13-30Hz)</div>
+                      <div className="metric-value" style={{ color: 'var(--accent)' }}>{selectedSession.beta_power?.toFixed?.(1) ?? selectedSession.beta_power} μV</div>
+                    </div>
+                    <div className="metric-card" style={{ padding: '12px' }}>
+                      <div className="metric-label">Beta/Alpha Ratio (BAR)</div>
+                      <div className="metric-value">{selectedSession.beta_alpha_ratio?.toFixed?.(2) ?? selectedSession.beta_alpha_ratio}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Vedantic Remedy & Shloka Section */}
+              <div className="card" style={{ borderLeft: '4px solid var(--primary)', padding: '1.25rem', marginTop: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '1rem' }}>
+                    {getConcept()}
+                  </span>
+                  <span style={{ fontSize: '0.78rem', background: 'var(--bg-subtle)', padding: '2px 8px', borderRadius: '8px', fontWeight: 700 }}>
+                    Chapter {verse.chapter}, Verse {verse.verse}
+                  </span>
+                </div>
+
+                {/* Sanskrit text */}
+                <div className="sanskrit-block" style={{ marginBottom: '8px', fontSize: '0.95rem' }}>
+                  {getSanskrit().split('\n').map((l, i) => <span key={i}>{l}<br /></span>)}
+                </div>
+
+                {/* Translation */}
+                <div className="translation-block" style={{ marginBottom: '10px', fontSize: '0.85rem' }}>
+                  <strong>{modalLang === 'hi' ? 'सीधा अर्थ:' : modalLang === 'bn' ? 'বঙ্গানুবাদ:' : modalLang === 'hl' ? 'Direct Meaning:' : 'Direct Translation:'}</strong><br />
+                  {getTranslation()}
+                </div>
+
+                {/* Somatic Grounding */}
+                <div className="section-label" style={{ marginTop: '0.75rem' }}>
+                  {modalLang === 'hi' ? '3-चरणीय स्थिरता अभ्यास' : modalLang === 'bn' ? '৩-পর্যায়ের মানসিক প্রশান্তি অনুশীলন' : '3-STAGE SOMATIC GROUNDING'}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  {getGroundingSteps().map((step, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.82rem' }}>
+                      <span style={{ background: 'var(--primary)', color: '#fff', width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', flexShrink: 0, marginTop: '2px' }}>
+                        {i + 1}
+                      </span>
+                      <span>{step}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Close Button */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setSelectedSession(null)}>
+                  Close Inspector
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </>
   );
 }
@@ -138,16 +620,16 @@ function getBarColor(state) {
   if (!state) return 'var(--primary)';
   const s = state.toLowerCase();
   if (s.includes('anxiety')) return 'var(--red-soft)';
-  if (s.includes('depression')) return 'var(--blue-soft)';
-  if (s.includes('stress')) return 'var(--amber-soft)';
+  if (s.includes('depression')) return 'var(--amber-soft)';
+  if (s.includes('stress')) return 'var(--blue-soft)';
   return 'var(--green-soft)';
 }
 
 function getStateClass(state) {
-  if (!state) return '';
+  if (!state) return 'state-sattva';
   const s = state.toLowerCase();
-  if (s.includes('anxiety')) return 'anxiety';
-  if (s.includes('depression')) return 'depression';
-  if (s.includes('stress')) return 'stress';
-  return 'equilibrium';
+  if (s.includes('anxiety') || s.includes('visada')) return 'state-visada';
+  if (s.includes('depression') || s.includes('tamas')) return 'state-tamas';
+  if (s.includes('stress') || s.includes('krodha')) return 'state-krodha';
+  return 'state-sattva';
 }
