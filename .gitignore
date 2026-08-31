@@ -28,3 +28,6 @@ build/
 pg.zip
 pg_data/
 pg_log.txt
+*.sqlite
+*.sqlite3
+
