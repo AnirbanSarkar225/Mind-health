@@ -79,7 +79,8 @@ router.post('/update', (req, res) => {
     onlineUpdate(signals, trueState, feedbackScore);
     mlUpdates++;
 
-    res.json({ updated: true, mlUpdates, dynamicAccuracy: getDynamicAccuracy() });
+    const verse = GITA_VERSES[trueState] || GITA_VERSES['EQUILIBRIUM (Sattva)'];
+    res.json({ updated: true, mlUpdates, dynamicAccuracy: getDynamicAccuracy(), verse });
   } catch (e) {
     console.error('Update error:', e);
     res.status(500).json({ error: 'Update failed.' });
