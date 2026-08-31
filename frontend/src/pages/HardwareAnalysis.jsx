@@ -24,6 +24,7 @@ export default function HardwareAnalysis() {
   });
   const [classification, setClassification] = useState(null);
   const [useML, setUseML] = useState(true);
+  const [lang, setLang] = useState('en');
 
   const updateSignal = (key, val) => {
     setSignals(prev => {
@@ -75,9 +76,8 @@ export default function HardwareAnalysis() {
             ML Gaussian Classifier
           </label>
         </div>
-        <div className="gauges-row" style={{ gridTemplateColumns: 'repeat(5,1fr)' }}>
+        <div className="gauges-row" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
           <SliderInput label="EEG Attention" min={0} max={100} value={signals.attention} onChange={v => updateSignal('attention', v)} />
-          <SliderInput label="EEG Meditation" min={0} max={100} value={signals.meditation} onChange={v => updateSignal('meditation', v)} />
           <SliderInput label="Alpha Power (μV)" min={1} max={50} value={signals.alpha} onChange={v => updateSignal('alpha', v)} />
           <SliderInput label="Beta Power (μV)" min={1} max={50} value={signals.beta} onChange={v => updateSignal('beta', v)} />
           <SliderInput label="Theta Power (μV)" min={1} max={50} value={signals.theta} onChange={v => updateSignal('theta', v)} />
@@ -91,10 +91,10 @@ export default function HardwareAnalysis() {
       <div className="section-label">EEG TELEMETRY METRICS</div>
       <div className="gauges-row">
         <GaugeCard label="EEG Attention" value={signals.attention} unit="/100" />
-        <GaugeCard label="EEG Meditation" value={signals.meditation} unit="/100" />
-        <GaugeCard label="Alpha Wave" value={signals.alpha} unit="μV" />
-        <GaugeCard label="Beta Wave" value={signals.beta} unit="μV" />
-        <GaugeCard label="Beta/Alpha" value={signals.baRatio} unit="ratio" />
+        <GaugeCard label="Alpha Wave (8-13Hz)" value={signals.alpha} unit="μV" />
+        <GaugeCard label="Beta Wave (13-30Hz)" value={signals.beta} unit="μV" />
+        <GaugeCard label="Theta Wave (4-8Hz)" value={signals.theta} unit="μV" />
+        <GaugeCard label="Beta/Alpha Ratio" value={signals.baRatio} unit="ratio" />
       </div>
 
       {/* Assessment + Waveform */}
@@ -140,7 +140,7 @@ export default function HardwareAnalysis() {
                   <div><span style={{color:'var(--green-soft)'}}>●</span> Alpha (8-13 Hz): {signals.alpha} μV</div>
                   <div><span style={{color:'var(--amber-soft)'}}>●</span> Beta (13-30 Hz): {signals.beta} μV</div>
                   <div><span style={{color:'var(--blue-soft)'}}>●</span> Theta (4-8 Hz): {signals.theta} μV</div>
-                  <div><span style={{color:'var(--primary)'}}>●</span> Med Score: {signals.meditation}</div>
+                  <div><span style={{color:'var(--primary)'}}>●</span> Sampling: 256 Hz</div>
                 </div>
                 <div style={{ marginTop: '1.5rem', fontSize: '0.85rem', opacity: 0.7 }}>Beta/Alpha Spectral Ratio</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{signals.baRatio.toFixed(2)}</div>
@@ -152,8 +152,28 @@ export default function HardwareAnalysis() {
           {verse && (
             <>
               <hr className="divider" />
-              <h2 style={{ marginBottom: '4px' }}>Gita Remediation & Vedantic Wisdom</h2>
-              <p style={{ marginBottom: '1.5rem' }}>Personalised philosophical grounding and Sanskrit prescriptions for {classification.state}</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+                <div>
+                  <h2 style={{ margin: '0 0 4px' }}>Gita Remediation & Vedantic Wisdom</h2>
+                  <p style={{ margin: 0 }}>Personalised philosophical grounding and Sanskrit prescriptions for {classification.state}</p>
+                </div>
+                {/* Multilingual Switcher */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: 'var(--bg-subtle)', padding: '4px 6px', borderRadius: '10px', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginRight: '4px' }}>Language:</span>
+                  <button type="button" className={`btn btn-sm ${lang === 'en' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setLang('en')} style={{ fontSize: '0.78rem', padding: '3px 9px' }}>
+                    English
+                  </button>
+                  <button type="button" className={`btn btn-sm ${lang === 'hi' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setLang('hi')} style={{ fontSize: '0.78rem', padding: '3px 9px' }}>
+                    हिन्दी
+                  </button>
+                  <button type="button" className={`btn btn-sm ${lang === 'bn' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setLang('bn')} style={{ fontSize: '0.78rem', padding: '3px 9px' }}>
+                    বাংলা
+                  </button>
+                  <button type="button" className={`btn btn-sm ${lang === 'hl' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setLang('hl')} style={{ fontSize: '0.78rem', padding: '3px 9px' }}>
+                    Hinglish
+                  </button>
+                </div>
+              </div>
 
               <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderLeft: '4px solid var(--primary)', borderRadius: '12px', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
@@ -170,14 +190,23 @@ export default function HardwareAnalysis() {
                   <div className="section-label">PRESCRIPTION SHLOKA & MEANING</div>
                   <div className="remedy-card">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid var(--border)', paddingBottom: '10px' }}>
-                      <span style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '1.05rem' }}>{verse.concept} ({verse.conceptSanskrit})</span>
+                      <span style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '1.05rem' }}>
+                        {lang === 'hi' ? verse.concept_hi || verse.concept : lang === 'bn' ? verse.concept_bn || verse.concept : lang === 'hl' ? verse.concept_hl || verse.concept : verse.concept}
+                      </span>
                       <span style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: '12px', padding: '3px 10px', color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 600 }}>
                         Chapter {verse.chapter}, Verse {verse.verse}
                       </span>
                     </div>
-                    <div className="sanskrit-block">{verse.sanskrit.split('\n').map((l, i) => <span key={i}>{l}<br /></span>)}</div>
-                    <div className="transliteration">{verse.transliteration.split('\n').map((l, i) => <span key={i}>{l}<br /></span>)}</div>
-                    <div className="translation-block"><strong>Direct Meaning:</strong><br />{verse.translation}</div>
+                    <div className="sanskrit-block">
+                      {(lang === 'bn' && verse.sanskritBengali ? verse.sanskritBengali : verse.sanskrit).split('\n').map((l, i) => <span key={i}>{l}<br /></span>)}
+                    </div>
+                    {(lang === 'en' || lang === 'hl') && (
+                      <div className="transliteration">{verse.transliteration.split('\n').map((l, i) => <span key={i}>{l}<br /></span>)}</div>
+                    )}
+                    <div className="translation-block">
+                      <strong>{lang === 'hi' ? 'सीधा अर्थ (भावार्थ):' : lang === 'bn' ? 'বঙ্গানুবাদ ও ভাবার্থ:' : lang === 'hl' ? 'Direct Meaning (Bhavarth):' : 'Direct Meaning:'}</strong><br />
+                      {lang === 'hi' ? verse.translation_hi || verse.translation : lang === 'bn' ? verse.translation_bn || verse.translation : lang === 'hl' ? verse.translation_hl || verse.translation : verse.translation}
+                    </div>
                   </div>
                 </div>
                 <div>
@@ -187,15 +216,17 @@ export default function HardwareAnalysis() {
                     <span className={`state-badge ${getStateClass(classification.state)}`}>{classification.state}</span>
                     <div className="pathway-arrow">↓</div>
                     <div className="pathway-node" style={{ background: 'var(--sage-bg)', border: '1px solid var(--sage)' }}>
-                      {verse.concept} <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>({verse.conceptSanskrit})</span>
+                      {lang === 'hi' ? verse.concept_hi || verse.concept : lang === 'bn' ? verse.concept_bn || verse.concept : lang === 'hl' ? verse.concept_hl || verse.concept : verse.concept}
                     </div>
                     <div className="pathway-arrow">↓</div>
                     <div className="pathway-node" style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)' }}>
                       <span style={{ color: 'var(--primary)', fontWeight: 700 }}>Ch. {verse.chapter}, V. {verse.verse}</span>
                     </div>
                     <hr className="divider" />
-                    <div className="section-label" style={{ textAlign: 'left' }}>SOMATIC GROUNDING STEPS</div>
-                    {verse.groundingSteps.map((step, i) => (
+                    <div className="section-label" style={{ textAlign: 'left' }}>
+                      {lang === 'hi' ? '3-चरणीय दैहिक स्थिरता अभ्यास' : lang === 'bn' ? '৩-পর্যায়ের মানসিক ও দৈহিক প্রশান্তি অনুশীলন' : lang === 'hl' ? '3-STAGE SOMATIC GROUNDING (STHIRATA ABHYAS)' : 'SOMATIC GROUNDING STEPS'}
+                    </div>
+                    {(lang === 'hi' ? verse.groundingSteps_hi || verse.groundingSteps : lang === 'bn' ? verse.groundingSteps_bn || verse.groundingSteps : lang === 'hl' ? verse.groundingSteps_hl || verse.groundingSteps : verse.groundingSteps).map((step, i) => (
                       <div className="grounding-step" key={i}>
                         <span className="step-marker">Step {i + 1}:</span>
                         <span>{step}</span>

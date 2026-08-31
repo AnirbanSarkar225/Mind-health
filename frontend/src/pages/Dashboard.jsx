@@ -81,7 +81,6 @@ export default function Dashboard() {
           <div className="card-subtle">
             <strong>Last Session:</strong> {lastStr}<br />
             <strong>Avg Attention Score:</strong> {(s.avgAttention || 0).toFixed(1)}/100<br />
-            <strong>Avg Meditation Score:</strong> {(s.avgMeditation || 0).toFixed(1)}/100<br />
             <strong>Dynamic Model Accuracy:</strong> {liveAccuracy}% (Auto-Recalibrating)<br />
             <strong>Feedback Contributions:</strong> {s.totalFeedback}
           </div>

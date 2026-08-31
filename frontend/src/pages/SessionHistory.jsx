@@ -15,16 +15,16 @@ export default function SessionHistory() {
   }, []);
 
   const total = sessions.length;
-  const avgMed = total > 0 ? (sessions.reduce((a, s) => a + (s.eeg_meditation || 0), 0) / total).toFixed(1) : '0.0';
+  const avgBAR = total > 0 ? (sessions.reduce((a, s) => a + (s.beta_alpha_ratio || 0), 0) / total).toFixed(2) : '0.00';
   const avgConf = total > 0 ? (sessions.reduce((a, s) => a + (s.confidence || 0), 0) / total * 100).toFixed(1) : '0.0';
 
   const dist = {};
   sessions.forEach(s => { dist[s.detected_state] = (dist[s.detected_state] || 0) + 1; });
 
   const exportCSV = () => {
-    const headers = 'Date,Attention,Meditation,Alpha,Beta,Theta,BA_Ratio,State,Method,Confidence\n';
+    const headers = 'Date,Attention,Alpha,Beta,Theta,BA_Ratio,State,Method,Confidence\n';
     const rows = sessions.map(s =>
-      `${new Date(s.created_at).toISOString()},${s.eeg_attention},${s.eeg_meditation},${s.alpha_power},${s.beta_power},${s.theta_power},${s.beta_alpha_ratio},${s.detected_state},${s.classifier_method},${s.confidence}`
+      `${new Date(s.created_at).toISOString()},${s.eeg_attention},${s.alpha_power},${s.beta_power},${s.theta_power},${s.beta_alpha_ratio},${s.detected_state},${s.classifier_method},${s.confidence}`
     ).join('\n');
     const blob = new Blob([headers + rows], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -54,8 +54,8 @@ export default function SessionHistory() {
           <div className="stat-value">{total}</div>
         </div>
         <div className="dash-stat-card">
-          <div className="stat-label">Avg Meditation Score</div>
-          <div className="stat-value primary">{avgMed} <span style={{fontSize:'0.8rem',fontWeight:400}}>/100</span></div>
+          <div className="stat-label">Avg Beta/Alpha Ratio</div>
+          <div className="stat-value primary">{avgBAR} <span style={{fontSize:'0.8rem',fontWeight:400}}>ratio</span></div>
         </div>
         <div className="dash-stat-card">
           <div className="stat-label">Avg Confidence</div>
@@ -103,7 +103,6 @@ export default function SessionHistory() {
               <tr>
                 <th>Date & Time</th>
                 <th>Attention</th>
-                <th>Meditation</th>
                 <th>Alpha (μV)</th>
                 <th>Beta (μV)</th>
                 <th>Theta (μV)</th>
@@ -118,7 +117,6 @@ export default function SessionHistory() {
                 <tr key={s.id}>
                   <td style={{ whiteSpace: 'nowrap' }}>{new Date(s.created_at).toLocaleString().slice(0, 19)}</td>
                   <td>{s.eeg_attention?.toFixed?.(1) ?? s.eeg_attention}</td>
-                  <td>{s.eeg_meditation?.toFixed?.(1) ?? s.eeg_meditation}</td>
                   <td>{s.alpha_power?.toFixed?.(1) ?? s.alpha_power}</td>
                   <td>{s.beta_power?.toFixed?.(1) ?? s.beta_power}</td>
                   <td>{s.theta_power?.toFixed?.(1) ?? s.theta_power}</td>
