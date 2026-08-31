@@ -452,9 +452,6 @@ export default function SessionHistory() {
                         ⚡ BioAmp Hardware Sensor Telemetry
                       </span>
                     )}
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                      #{selectedSession.id?.slice(0, 8)}
-                    </span>
                   </div>
                   <h2 style={{ margin: 0, fontSize: '1.4rem' }}>{selectedSession.detected_state}</h2>
                   <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>

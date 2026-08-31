@@ -696,7 +696,7 @@ export default function SelfAssessment() {
 
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '1rem' }}>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                  ✓ <strong>Session Saved:</strong> Session #{savedSessionId || 'Active'} logged to your private medical history.
+                  ✓ <strong>Session Saved:</strong> Logged to your private medical history.
                 </div>
               </div>
             </div>
