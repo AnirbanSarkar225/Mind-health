@@ -15,7 +15,7 @@
  *   {"attention":65.0,"meditation":72.0,"alpha":18.4,"beta":11.2,"theta":9.1,"ba_ratio":0.61}
  */
 
-#include <Arduino.h>
+#include<Arduino.h>
 
 // ── Configuration ────────────────────────────────────────────────────────────
 #define EEG_ANALOG_PIN  A0     // BioAmp EXG Pill Analog OUT
