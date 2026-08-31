@@ -1,7 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { motion, useScroll, useSpring } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
-import { FiCheckCircle, FiArrowRight, FiHeart, FiShield, FiUsers } from 'react-icons/fi';
+import { api } from '../api/client';
+import OtpInput from '../components/OtpInput';
+import { FiCheckCircle, FiArrowRight, FiHeart, FiShield, FiUsers, FiRefreshCw } from 'react-icons/fi';
 import { FaBedPulse, FaTruckMedical, FaHandHoldingMedical, FaNotesMedical, FaHeartPulse } from 'react-icons/fa6';
+
+const SECTIONS = [
+  { id: "hero", label: "Home" },
+  { id: "science", label: "Science & Stats" },
+  { id: "specialists", label: "AI Modules" },
+  { id: "conditions", label: "Neuro-States" },
+  { id: "pipeline", label: "Pipeline" },
+  { id: "auth-section", label: "Get Started" },
+];
 
 const CONDITIONS = [
   { title: 'Acute Anxiety', sanskrit: 'Visada', bio: 'High Beta & Tachycardia', color: '#FFE4E6' },
@@ -21,16 +33,67 @@ const MODULES = [
   { name: 'Neuro-Adaptive DB', specialty: 'Online Weight Updates', img: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=150&auto=format&fit=crop', available: true },
 ];
 
+const fadeIn = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.23, 1, 0.32, 1] } },
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
+};
+
 export default function Landing() {
   const { login, register, verifyOTP, needsVerification, user } = useAuth();
   const [authTab, setAuthTab] = useState('login');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [activeSection, setActiveSection] = useState(0);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [otpCode, setOtpCode] = useState('');
+  const [resendStatus, setResendStatus] = useState('');
+
+  // Scroll Progress Bar
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001,
+  });
+
+  // Track active section for floating nav dots
+  useEffect(() => {
+    const handleScroll = () => {
+      const viewportCenter = window.innerHeight / 2;
+      let closest = 0;
+      let minDistance = Infinity;
+
+      SECTIONS.forEach((sec, idx) => {
+        const el = document.getElementById(sec.id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          const distance = Math.abs(rect.top + rect.height / 2 - viewportCenter);
+          if (distance < minDistance) {
+            minDistance = distance;
+            closest = idx;
+          }
+        }
+      });
+      setActiveSection(closest);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -57,7 +120,8 @@ export default function Landing() {
   };
 
   const handleVerify = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    if (!otpCode || otpCode.length < 6) return;
     setError('');
     setLoading(true);
     try {
@@ -68,65 +132,223 @@ export default function Landing() {
     setLoading(false);
   };
 
+  const handleResend = async () => {
+    setError('');
+    setResendStatus('');
+    try {
+      await api.resendOTP();
+      setResendStatus('✓ A new 6-digit code has been sent to your email.');
+      setTimeout(() => setResendStatus(''), 5000);
+    } catch (err) {
+      setError(err.message || 'Failed to resend code');
+    }
+  };
+
+  const scrollTo = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   if (needsVerification) {
     return (
-      <div style={{ maxWidth: 420, margin: '4rem auto', textAlign: 'center' }}>
-        <h2>Verify Your Email</h2>
-        <p style={{ marginBottom: '2rem' }}>We've sent a 6-digit code to <strong>{user?.email}</strong></p>
-        <form onSubmit={handleVerify}>
-          {error && <div className="form-error">{error}</div>}
-          <div className="form-group">
-            <input className="form-control" type="text" maxLength={6} placeholder="Enter 6-digit OTP"
-              value={otpCode} onChange={(e) => setOtpCode(e.target.value)} style={{textAlign:'center',fontSize:'1.5rem',letterSpacing:'8px'}} />
+      <div className="landing-inner" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+        <div style={{ maxWidth: 460, width: '100%', margin: '2rem auto', textAlign: 'center', background: 'var(--bg-white)', padding: '2.5rem 2rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--border)' }}>
+          <div style={{ width: 56, height: 56, margin: '0 auto 1.25rem', borderRadius: '50%', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>
+            <FiShield />
           </div>
-          <button className="btn btn-primary btn-block" type="submit" disabled={loading}>
-            {loading ? 'Verifying...' : 'Verify Email'}
-          </button>
-        </form>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>Verify Your Email</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', marginBottom: '1.25rem' }}>
+            Enter the 6-digit verification code sent to <strong style={{ color: 'var(--text-primary)' }}>{user?.email}</strong>
+          </p>
+
+          <form onSubmit={handleVerify}>
+            <OtpInput
+              length={6}
+              mode="numeric"
+              onChange={setOtpCode}
+              onComplete={async (val) => {
+                setOtpCode(val);
+                setError('');
+                setLoading(true);
+                try {
+                  await verifyOTP(val);
+                } catch (err) {
+                  setError(err.message);
+                }
+                setLoading(false);
+              }}
+              status={error ? "error" : resendStatus ? "success" : "idle"}
+              errorMessage={error}
+              successMessage={resendStatus}
+              autoFocus
+            />
+
+            <button
+              className="btn btn-primary btn-block"
+              type="submit"
+              disabled={loading || otpCode.length < 6}
+              style={{ marginTop: '1.25rem' }}
+            >
+              {loading ? 'Verifying...' : 'Verify & Continue'}
+            </button>
+          </form>
+
+          <div style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            Didn't receive the code?{' '}
+            <button
+              type="button"
+              onClick={handleResend}
+              style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', verticalAlign: 'middle' }}
+            >
+              <FiRefreshCw size={12} /> Resend OTP
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <>
+    <div className="landing-inner">
+      {/* ── Top Scroll Progress Bar ────────────────────────── */}
+      <motion.div
+        style={{
+          scaleX,
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 3,
+          background: 'linear-gradient(90deg, #4C72FF 0%, #34D399 100%)',
+          transformOrigin: '0%',
+          zIndex: 9999,
+          boxShadow: '0 0 8px rgba(76, 114, 255, 0.4)',
+        }}
+      />
+
+      {/* ── Side Floating Section Nav Dots ─────────────────── */}
+      <nav
+        aria-label="Section Navigation"
+        style={{
+          position: 'fixed',
+          right: '1.5rem',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          zIndex: 90,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem',
+          alignItems: 'center',
+        }}
+        className="floating-landing-nav"
+      >
+        <div
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: 0,
+            bottom: 0,
+            width: 1,
+            background: 'linear-gradient(180deg, transparent 0%, rgba(76, 114, 255, 0.25) 50%, transparent 100%)',
+            transform: 'translateX(-50%)',
+            zIndex: -1,
+          }}
+        />
+        {SECTIONS.map((sec, idx) => (
+          <div key={sec.id} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <button
+              type="button"
+              onClick={() => scrollTo(sec.id)}
+              aria-label={`Scroll to ${sec.label}`}
+              style={{
+                width: 9,
+                height: 9,
+                borderRadius: '50%',
+                border: activeSection === idx ? '2px solid #4C72FF' : '2px solid rgba(107, 114, 128, 0.35)',
+                background: activeSection === idx ? '#4C72FF' : '#ffffff',
+                cursor: 'pointer',
+                padding: 0,
+                transform: activeSection === idx ? 'scale(1.3)' : 'scale(1)',
+                boxShadow: activeSection === idx ? '0 0 10px rgba(76, 114, 255, 0.5)' : 'none',
+                transition: 'all 0.25s ease',
+              }}
+            />
+          </div>
+        ))}
+      </nav>
+
+      {/* ── Navbar ─────────────────────────────────────────── */}
       <nav className="navbar">
-        <div className="navbar-logo">
+        <motion.div
+          className="navbar-logo"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+        >
           <FiHeart /> Gita-NeuroSync
-        </div>
+        </motion.div>
         <div className="nav-links">
-          <a href="#" className="active">Home</a>
-          <a href="#conditions">Science</a>
+          <a href="#hero" className="active">Home</a>
+          <a href="#science">Science</a>
           <a href="#specialists">Specialists</a>
           <a href="#about">About</a>
         </div>
-        <div className="auth-buttons">
-          <button className="btn btn-dark btn-sm" onClick={() => { setAuthTab('login'); document.getElementById('auth-section')?.scrollIntoView({behavior:'smooth'}); }}>Login</button>
-          <button className="btn btn-outline btn-sm" onClick={() => { setAuthTab('register'); document.getElementById('auth-section')?.scrollIntoView({behavior:'smooth'}); }}>Sign Up <FiArrowRight /></button>
-        </div>
+        <motion.div
+          className="auth-buttons"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <button className="btn btn-dark btn-sm" onClick={() => { setAuthTab('login'); scrollTo('auth-section'); }}>Login</button>
+          <button className="btn btn-outline btn-sm" onClick={() => { setAuthTab('register'); scrollTo('auth-section'); }}>Sign Up <FiArrowRight /></button>
+        </motion.div>
       </nav>
 
-      <section className="hero-section">
-        <div className="hero-content">
-          <div className="hero-badge">
+      {/* ── 1. Hero Section ────────────────────────────────── */}
+      <section id="hero" className="hero-section">
+        <motion.div
+          className="hero-content"
+          initial="hidden"
+          animate="visible"
+          variants={staggerContainer}
+        >
+          <motion.div className="hero-badge" variants={fadeIn}>
             <FiCheckCircle /> AI-Powered Biosignal Intelligence
-          </div>
-          <h1>Your health is<br />our priority</h1>
-          <p>Quantitative, real-time, confidential neuro-psychological assessment. Cognitive and emotional imbalances are measurable — and actionable remediation is possible with Vedantic wisdom.</p>
-          <div className="hero-actions">
-            <button className="btn btn-primary" onClick={() => document.getElementById('auth-section')?.scrollIntoView({behavior:'smooth'})}>
+          </motion.div>
+          <motion.h1 variants={fadeIn}>
+            Your health is<br />our priority
+          </motion.h1>
+          <motion.p variants={fadeIn}>
+            Quantitative, real-time, confidential neuro-psychological assessment. Cognitive and emotional imbalances are measurable — and actionable remediation is possible with Vedantic wisdom.
+          </motion.p>
+          <motion.div className="hero-actions" variants={fadeIn}>
+            <button className="btn btn-primary" onClick={() => scrollTo('auth-section')}>
               Book Assessment
             </button>
-            <a href="#" className="hero-social">→ Learn More</a>
-          </div>
-        </div>
-        <div className="hero-image">
+            <a href="#science" className="hero-social">→ Learn More</a>
+          </motion.div>
+        </motion.div>
+
+        <motion.div
+          className="hero-image"
+          initial={{ opacity: 0, scale: 0.94, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.2, ease: [0.23, 1, 0.32, 1] }}
+          whileHover={{ scale: 1.015 }}
+        >
           <div className="floating-badge top-right">Neuro-Psychology</div>
           <img src="https://images.unsplash.com/photo-1559757175-5700dde675bc?q=80&w=2070&auto=format&fit=crop" alt="AI Brain Network" />
-        </div>
+        </motion.div>
       </section>
 
-      <section className="stats-section">
-        <div className="stats-text">
+      {/* ── 2. Stats Section ───────────────────────────────── */}
+      <section id="science" className="stats-section">
+        <motion.div
+          className="stats-text"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+          variants={fadeIn}
+        >
           <h3>Expert Care <span className="highlight">✦</span></h3>
           <h2>Medical consultation<br />and Premium care</h2>
           <p>We provide world-class neuro-psychological assessment with our expert team. Personalized care utilizing advanced biosignal technology and Vedantic wisdom.</p>
@@ -135,38 +357,63 @@ export default function Landing() {
               <span className="progress-dot"></span> Assessment Accuracy 85.34%
             </div>
             <div className="progress-bar-track">
-              <div className="progress-bar-fill" style={{width:'85.34%'}}></div>
+              <motion.div
+                className="progress-bar-fill"
+                initial={{ width: 0 }}
+                whileInView={{ width: '85.34%' }}
+                viewport={{ once: true }}
+                transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+              />
             </div>
           </div>
-        </div>
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="icon-circle"><FiUsers /></div>
-            <h4>Adaptive ML</h4>
-            <p>Gaussian Naive Bayes & Rule Engines</p>
-          </div>
-          <div className="stat-card">
-            <div className="icon-circle"><FaBedPulse /></div>
-            <h4>8 Measurable States</h4>
-            <p>EEG, ECG, HRV Telemetry</p>
-          </div>
-          <div className="stat-card">
-            <div className="icon-circle"><FaTruckMedical /></div>
-            <h4>Real-Time Analysis</h4>
-            <p>24/7 Hardware Monitoring</p>
-          </div>
-          <div className="stat-card">
-            <div className="icon-circle"><FaHandHoldingMedical /></div>
-            <h4>100% Data Privacy</h4>
-            <p>Encrypted & Confidential</p>
-          </div>
-        </div>
+        </motion.div>
+
+        <motion.div
+          className="stats-grid"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+          variants={staggerContainer}
+        >
+          {[
+            { icon: FiUsers, title: 'Adaptive ML', desc: 'Gaussian Naive Bayes & Rule Engines' },
+            { icon: FaBedPulse, title: '8 Measurable States', desc: 'EEG, ECG, HRV Telemetry' },
+            { icon: FaTruckMedical, title: 'Real-Time Analysis', desc: '24/7 Hardware Monitoring' },
+            { icon: FaHandHoldingMedical, title: '100% Data Privacy', desc: 'Encrypted & Confidential' },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <motion.div
+                key={item.title}
+                className="stat-card"
+                variants={fadeIn}
+                whileHover={{ y: -6, transition: { duration: 0.2 } }}
+              >
+                <div className="icon-circle"><Icon /></div>
+                <h4>{item.title}</h4>
+                <p>{item.desc}</p>
+              </motion.div>
+            );
+          })}
+        </motion.div>
       </section>
 
+      {/* ── 3. AI Modules Section ──────────────────────────── */}
       <div id="specialists" className="section-label" style={{textAlign:'center',marginBottom:'1.5rem'}}>AI INTELLIGENCE MODULES</div>
-      <section className="doctors-list">
+      <motion.section
+        className="doctors-list"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-60px" }}
+        variants={staggerContainer}
+      >
         {MODULES.map((mod, i) => (
-          <div className="doctor-mini-card" key={i}>
+          <motion.div
+            className="doctor-mini-card"
+            key={i}
+            variants={fadeIn}
+            whileHover={{ y: -5, scale: 1.02, transition: { duration: 0.2 } }}
+          >
             <img src={mod.img} alt={mod.name} />
             <div className="doc-info">
               <h5>{mod.name}</h5>
@@ -175,47 +422,95 @@ export default function Landing() {
             <span className={`status-badge available`}>
               Online
             </span>
-          </div>
+          </motion.div>
         ))}
-      </section>
+      </motion.section>
 
-      <div id="conditions" style={{textAlign:'center', marginBottom:'2rem'}}>
+      {/* ── 4. Conditions Grid ─────────────────────────────── */}
+      <motion.div
+        id="conditions"
+        style={{textAlign:'center', marginBottom:'2rem'}}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-60px" }}
+        variants={fadeIn}
+      >
         <div className="section-label" style={{color:'var(--secondary)'}}>CONDITIONS</div>
         <h2>Neuro-States We Measure & Remediate</h2>
         <p style={{maxWidth:600,margin:'0.5rem auto 0'}}>Biomedically verifiable through real-time EEG, ECG/Pulse, and HRV telemetry</p>
-      </div>
-      <div className="conditions-grid">
+      </motion.div>
+
+      <motion.div
+        className="conditions-grid"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-60px" }}
+        variants={staggerContainer}
+      >
         {CONDITIONS.map((c, i) => (
-          <div className="condition-card" key={i} style={{backgroundColor: c.color}}>
+          <motion.div
+            className="condition-card"
+            key={i}
+            style={{backgroundColor: c.color}}
+            variants={fadeIn}
+            whileHover={{ y: -6, scale: 1.02, transition: { duration: 0.2 } }}
+          >
             <div className="condition-title">{c.title}</div>
             <div className="condition-sub">{c.sanskrit}</div>
             <span className="condition-pill">{c.bio}</span>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
-      <section className="bottom-section" id="about">
+      {/* ── 5. AI Pipeline Section ─────────────────────────── */}
+      <section className="bottom-section" id="pipeline">
         <div className="bottom-cards">
-          <div className="info-card gradient-bg">
+          <motion.div
+            className="info-card gradient-bg"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-60px" }}
+            variants={fadeIn}
+            whileHover={{ y: -4 }}
+          >
             <h3>Algorithmic neuro-state mapping tailored to you</h3>
             <p>Experience precision psychophysiology. Our local Gaussian ML and Vedantic rule engine analyzes your real-time EEG/HRV telemetry to provide targeted scriptural grounding.</p>
-          </div>
-          <div className="image-card">
+          </motion.div>
+          <motion.div
+            className="image-card"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-60px" }}
+            variants={fadeIn}
+            whileHover={{ scale: 1.02 }}
+          >
             <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2080&auto=format&fit=crop" alt="Abstract AI Network" />
-          </div>
+          </motion.div>
         </div>
-        <div>
+
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+          variants={fadeIn}
+        >
           <h3 style={{marginBottom:'1.5rem'}}>Real-time AI Pipeline</h3>
           <div className="process-steps">
-            <div className="process-step active"><FaBedPulse /></div>
-            <div className="step-line"></div>
-            <div className="process-step active"><FaHeartPulse /></div>
-            <div className="step-line"></div>
-            <div className="process-step active"><FiCheckCircle /></div>
-            <div className="step-line"></div>
-            <div className="process-step active"><FaNotesMedical /></div>
-            <div className="step-line"></div>
-            <div className="process-step active"><FiShield /></div>
+            {[FaBedPulse, FaHeartPulse, FiCheckCircle, FaNotesMedical, FiShield].map((Icon, idx) => (
+              <div key={idx} style={{ display: 'flex', alignItems: 'center' }}>
+                <motion.div
+                  className="process-step active"
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  whileInView={{ scale: 1, opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1, duration: 0.4 }}
+                  whileHover={{ scale: 1.15 }}
+                >
+                  <Icon />
+                </motion.div>
+                {idx < 4 && <div className="step-line"></div>}
+              </div>
+            ))}
           </div>
 
           <div style={{ marginBottom: '2rem' }}>
@@ -227,18 +522,32 @@ export default function Landing() {
             </div>
           </div>
 
-          <button className="btn btn-primary btn-block" onClick={() => document.getElementById('auth-section')?.scrollIntoView({behavior:'smooth'})}>
+          <button className="btn btn-primary btn-block" onClick={() => scrollTo('auth-section')}>
             Initialize Engine
           </button>
-        </div>
+        </motion.div>
       </section>
 
-      <div id="auth-section" style={{textAlign:'center', marginTop:'3rem', marginBottom:'2rem'}}>
+      {/* ── 6. Auth / Get Started Section ──────────────────── */}
+      <motion.div
+        id="auth-section"
+        style={{textAlign:'center', marginTop:'3rem', marginBottom:'2rem'}}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-60px" }}
+        variants={fadeIn}
+      >
         <h2>Get Started</h2>
         <p>Sign in or create an account to access your personalised dashboard</p>
-      </div>
+      </motion.div>
 
-      <div className="auth-section">
+      <motion.div
+        className="auth-section"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-60px" }}
+        variants={fadeIn}
+      >
         <div className="auth-tabs">
           <button className={`auth-tab ${authTab === 'login' ? 'active' : ''}`} onClick={() => { setAuthTab('login'); setError(''); }}>Sign In</button>
           <button className={`auth-tab ${authTab === 'register' ? 'active' : ''}`} onClick={() => { setAuthTab('register'); setError(''); }}>Create Account</button>
@@ -280,13 +589,14 @@ export default function Landing() {
             </button>
           </form>
         )}
-      </div>
+      </motion.div>
 
-      <div className="footer">
+      {/* ── Footer ─────────────────────────────────────────── */}
+      <div className="footer" id="about">
         <div className="footer-brand">Gita-NeuroSync</div>
         Confidential, encrypted, and biomedical psychophysiology architecture<br />
         © 2026 Mind Diagnostics · All Rights Reserved
       </div>
-    </>
+    </div>
   );
 }

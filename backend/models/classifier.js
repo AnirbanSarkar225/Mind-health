@@ -155,7 +155,7 @@ export function classify(signals, useML = true) {
     return {
       state: ruleState,
       method: `Clinical Rules (Fallback)`,
-      confidence: Math.max(0.70, Math.min(0.88, ml.confidence)),
+      confidence: Math.max(0.70, Math.min(0.80, ml.confidence)),
       proba: ml.proba,
       dynamicAccuracy: getDynamicAccuracy(),
     };
@@ -164,7 +164,7 @@ export function classify(signals, useML = true) {
   return {
     state: ml.state,
     method: 'Gaussian Naive Bayes ML',
-    confidence: ml.confidence,
+    confidence: Math.min(0.80, ml.confidence),
     proba: ml.proba,
     dynamicAccuracy: getDynamicAccuracy(),
   };

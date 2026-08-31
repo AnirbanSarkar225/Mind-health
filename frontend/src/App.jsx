@@ -10,7 +10,14 @@ import Sidebar from './components/Sidebar';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
-  if (loading) return <div className="app-container"><div className="app-inner" style={{textAlign:'center',paddingTop:'4rem'}}>Loading...</div></div>;
+  if (loading) {
+    return (
+      <div className="app-loading-screen">
+        <div className="loading-spinner"></div>
+        <p>Verifying secure session...</p>
+      </div>
+    );
+  }
   if (!isAuthenticated) return <Navigate to="/" replace />;
   return children;
 }
@@ -19,28 +26,31 @@ export default function App() {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
-    return <div className="app-container"><div className="app-inner" style={{textAlign:'center',paddingTop:'4rem',fontSize:'1.1rem',color:'var(--text-secondary)'}}>Loading Gita-NeuroSync...</div></div>;
-  }
-
-  // Unauthenticated → Landing page
-  if (!isAuthenticated) {
     return (
-      <div className="app-container">
-        <div className="app-inner">
-          <Routes>
-            <Route path="*" element={<Landing />} />
-          </Routes>
-        </div>
+      <div className="app-loading-screen">
+        <div className="loading-spinner"></div>
+        <p>Loading Gita-NeuroSync...</p>
       </div>
     );
   }
 
-  // Authenticated → Sidebar + Pages
+  // Unauthenticated → Full-width responsive Landing page
+  if (!isAuthenticated) {
+    return (
+      <div className="landing-layout">
+        <Routes>
+          <Route path="*" element={<Landing />} />
+        </Routes>
+      </div>
+    );
+  }
+
+  // Authenticated → Modern SaaS layout with pinned Left Sidebar & Fluid Main Content
   return (
-    <div className="app-container">
-      <div className="app-layout">
-        <Sidebar />
-        <main className="main-content">
+    <div className="app-shell">
+      <Sidebar />
+      <main className="main-content">
+        <div className="content-container">
           <Routes>
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/hardware" element={<ProtectedRoute><HardwareAnalysis /></ProtectedRoute>} />
@@ -49,8 +59,8 @@ export default function App() {
             <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

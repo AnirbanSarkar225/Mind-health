@@ -1,0 +1,149 @@
+/* ============================================================
+   GITA-NEUROSYNC — ANIMATED MOTION OTP INPUT
+   ============================================================ */
+
+.otp-wrapper {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 1.5rem auto;
+  width: 100%;
+}
+
+.otp-group-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.otp-cell-wrap {
+  position: relative;
+  width: 44px;
+  height: 54px;
+}
+
+.otp-cell-gap {
+  margin-left: 0.75rem;
+}
+
+.otp-input-field {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background-color: var(--bg-input, #F8FAFC);
+  text-align: center;
+  font-size: 1.25rem;
+  font-family: inherit;
+  color: transparent !important;
+  caret-color: transparent !important;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.otp-input-field::selection {
+  background: transparent;
+}
+
+.otp-input-field:focus {
+  border-color: var(--primary, #4C72FF);
+  background-color: #FFFFFF;
+  box-shadow: 0 0 0 4px rgba(76, 114, 255, 0.15), 0 2px 8px rgba(76, 114, 255, 0.1);
+}
+
+.otp-input-field.is-filled {
+  border-color: #CBD5E1;
+  background-color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.otp-input-field.is-active {
+  border-color: var(--primary, #4C72FF);
+  background-color: #FFFFFF;
+  box-shadow: 0 0 0 4px rgba(76, 114, 255, 0.18);
+}
+
+.otp-input-field.is-error {
+  border-color: #EF4444 !important;
+  background-color: #FEF2F2 !important;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15) !important;
+}
+
+.otp-input-field.is-success {
+  border-color: #10B981 !important;
+  background-color: #ECFDF5 !important;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15) !important;
+}
+
+.otp-input-field:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Overlay Digit & Cursor ──────────────────────────────── */
+.otp-digit-overlay {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.otp-digit-char {
+  grid-column: 1;
+  grid-row: 1;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, monospace;
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary, #172033);
+  letter-spacing: -0.5px;
+}
+
+.otp-cursor-bar {
+  grid-column: 1;
+  grid-row: 1;
+  display: block;
+  height: 22px;
+  width: 2px;
+  border-radius: 2px;
+  background-color: var(--primary, #4C72FF);
+  box-shadow: 0 0 8px rgba(76, 114, 255, 0.5);
+}
+
+/* ── Status / Error / Success Message ────────────────────── */
+.otp-status-area {
+  margin-top: 0.65rem;
+  display: grid;
+  min-height: 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.otp-status-text {
+  grid-column: 1;
+  grid-row: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.otp-status-text.tone-error {
+  color: #DC2626;
+}
+
+.otp-status-text.tone-success {
+  color: #059669;
+}
+
+.otp-status-text.tone-hint {
+  color: var(--text-secondary, #6B7280);
+}
