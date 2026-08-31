@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FiHome, FiActivity, FiClipboard, FiClock, FiUser, FiLogOut } from 'react-icons/fi';
+import { MdVerified } from 'react-icons/md';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: FiHome },
@@ -26,8 +27,13 @@ export default function Sidebar() {
         <p>Chikitsa-Lite · AI Biosignal Remediation</p>
       </div>
 
-      <div className="sidebar-user">
-        User: <strong style={{color:'var(--text-primary)'}}>{user?.username || 'User'}</strong>
+      <div className="sidebar-user" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        User: <strong style={{color:'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px'}}>
+          {user?.username || 'User'}
+          {user?.email === 'itzsoumyajit@gmail.com' && (
+            <MdVerified color="#1d9bf0" size={16} title="Verified User" />
+          )}
+        </strong>
       </div>
 
       <div className="section-label">NAVIGATION</div>
