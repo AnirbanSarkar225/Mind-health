@@ -112,7 +112,7 @@ router.post('/verify-otp', authMiddleware, async (req, res) => {
 
     const result = await query(
       `SELECT id FROM otp_codes
-       WHERE user_id = ? AND code = ? AND used = 0 AND expires_at > CURRENT_TIMESTAMP
+       WHERE user_id = ? AND code = ? AND used = 0 AND datetime(expires_at) > datetime('now')
        ORDER BY created_at DESC LIMIT 1`,
       [userId, code]
     );

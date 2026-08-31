@@ -27,7 +27,10 @@ build/
 .env
 pg.zip
 pg_data/
-pg_log.txt
 *.sqlite
 *.sqlite3
-
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite-journal
+backend/data/*.sqlite*
+data/*.sqlite*
