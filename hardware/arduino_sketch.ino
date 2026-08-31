@@ -15,7 +15,29 @@
  *   {"attention":65.0,"meditation":72.0,"alpha":18.4,"beta":11.2,"theta":9.1,"ba_ratio":0.61}
  */
 
-#include<Arduino.h>
+#if defined(ARDUINO)
+  #include <Arduino.h>
+#else
+  // VS Code C/C++ IntelliSense Fallbacks (Ignored during Arduino compilation)
+  #include <stdint.h>
+  #include <math.h>
+  #define A0 14
+  #define INPUT 0x0
+  #define OUTPUT 0x1
+  inline unsigned long millis() { return 0; }
+  inline unsigned long micros() { return 0; }
+  inline int analogRead(uint8_t pin) { return 0; }
+  inline void pinMode(uint8_t pin, uint8_t mode) {}
+  #define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
+  struct SerialStream {
+    void begin(unsigned long baud) {}
+    void print(const char* s) {}
+    void print(float val, int dec = 2) {}
+    void print(int val) {}
+    void println(const char* s = "") {}
+  };
+  static SerialStream Serial;
+#endif
 
 // ── Configuration ────────────────────────────────────────────────────────────
 #define EEG_ANALOG_PIN  A0     // BioAmp EXG Pill Analog OUT
