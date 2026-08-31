@@ -89,7 +89,7 @@ export default function Dashboard() {
       {/* Quick Actions */}
       <div className="section-label">QUICK ACTIONS</div>
       <div className="grid-3" style={{ gap: '1rem' }}>
-        <button className="btn btn-primary btn-block" onClick={() => navigate('/hardware')}>Start New Reading</button>
+        <button className="btn btn-secondary btn-block" onClick={() => navigate('/hardware')}>Start New Reading</button>
         <button className="btn btn-secondary btn-block" onClick={() => navigate('/history')}>View Session History</button>
         <button className="btn btn-secondary btn-block" onClick={() => navigate('/assessment')}>Log Self-Assessment</button>
       </div>

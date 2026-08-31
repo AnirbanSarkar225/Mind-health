@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 
 const STATES = [
@@ -16,6 +17,7 @@ const SYMPTOM_OPTIONS = [
 ];
 
 export default function SelfAssessment() {
+  const navigate = useNavigate();
   const [description, setDescription] = useState('');
   const [symptoms, setSymptoms] = useState([]);
   const [discomfort, setDiscomfort] = useState(3);
@@ -68,6 +70,9 @@ export default function SelfAssessment() {
   if (submitted) {
     return (
       <>
+        <button className="back-to-dash" onClick={() => navigate('/')}>
+          &larr; Dashboard
+        </button>
         <div className="page-header">
           <h1>Self-Assessment</h1>
         </div>
@@ -85,6 +90,9 @@ export default function SelfAssessment() {
 
   return (
     <>
+      <button className="back-to-dash" onClick={() => navigate('/')}>
+        &larr; Dashboard
+      </button>
       <div className="page-header">
         <h1>Self-Assessment</h1>
         <p>Manually log your symptoms and confirm your mental state — train the ML model with your feedback</p>

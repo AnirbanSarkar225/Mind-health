@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 
 export default function SessionHistory() {
+  const navigate = useNavigate();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,6 +40,9 @@ export default function SessionHistory() {
 
   return (
     <>
+      <button className="back-to-dash" onClick={() => navigate('/')}>
+        &larr; Dashboard
+      </button>
       <div className="page-header">
         <h1>Session History</h1>
         <p>Full telemetry log with state classifications, confidence scores, and trend analysis</p>

@@ -723,6 +723,30 @@ textarea.form-control {
   max-width: calc(100% - 260px);
 }
 
+.back-to-dash {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.back-to-dash:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
+  transform: translateX(-3px);
+}
+
 .page-header {
   margin-bottom: 1.5rem;
 }

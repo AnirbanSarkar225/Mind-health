@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 
 const STATES = [
@@ -12,6 +13,7 @@ const BAR_COLORS = ['var(--red-soft)', 'var(--blue-soft)', 'var(--amber-soft)', 
 const BAR_LABELS = ['Anxiety', 'Depression', 'Stress', 'Equilibrium'];
 
 export default function HardwareAnalysis() {
+  const navigate = useNavigate();
   const [signals, setSignals] = useState({ bpm: 0, hrv: 0, attention: 0, meditation: 0, baRatio: 0 });
   const [classification, setClassification] = useState(null);
   const [useML, setUseML] = useState(true);
@@ -46,6 +48,9 @@ export default function HardwareAnalysis() {
 
   return (
     <>
+      <button className="back-to-dash" onClick={() => navigate('/')}>
+        &larr; Dashboard
+      </button>
       <div className="page-header">
         <h1>Hardware & Analysis</h1>
         <p>Connect biosignal hardware, view live telemetry, and receive AI-powered Vedantic remediation</p>

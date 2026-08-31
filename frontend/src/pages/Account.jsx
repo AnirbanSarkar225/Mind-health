@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 
 export default function Account() {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [stats, setStats] = useState(null);
 
@@ -31,6 +33,9 @@ export default function Account() {
 
   return (
     <>
+      <button className="back-to-dash" onClick={() => navigate('/')}>
+        &larr; Dashboard
+      </button>
       <div className="page-header">
         <h1>My Account</h1>
         <p>Profile, security, and data export</p>
