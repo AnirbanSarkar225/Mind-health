@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { query } from '../config/db.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { getDynamicAccuracy } from '../models/classifier.js';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
@@ -100,6 +101,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
         avgAlpha,
         avgConfidence,
         mostFrequentState,
+        dynamicAccuracy: getDynamicAccuracy(),
         totalFeedback: feedbackRes.rows[0].count,
       }
     });

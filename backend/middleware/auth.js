@@ -14,6 +14,10 @@ export function generateToken(user) {
   );
 }
 
+export function verifyToken(token) {
+  return jwt.verify(token, JWT_SECRET);
+}
+
 export function authMiddleware(req, res, next) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {

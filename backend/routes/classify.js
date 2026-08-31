@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { classify, onlineUpdate, computeScores } from '../models/classifier.js';
+import { classify, onlineUpdate, computeScores, getDynamicAccuracy } from '../models/classifier.js';
 import { GITA_VERSES } from '../models/verses.js';
 
 const router = Router();
@@ -35,6 +35,7 @@ router.post('/', (req, res) => {
         proba: [0.25, 0.25, 0.25, 0.25],
         stressIdx: 0,
         calmScore: 0,
+        dynamicAccuracy: getDynamicAccuracy(),
         verse,
         mlUpdates,
       });
@@ -47,6 +48,7 @@ router.post('/', (req, res) => {
     res.json({
       ...result,
       ...scores,
+      dynamicAccuracy: getDynamicAccuracy(),
       verse,
       mlUpdates,
     });
@@ -77,7 +79,7 @@ router.post('/update', (req, res) => {
     onlineUpdate(signals, trueState, feedbackScore);
     mlUpdates++;
 
-    res.json({ updated: true, mlUpdates });
+    res.json({ updated: true, mlUpdates, dynamicAccuracy: getDynamicAccuracy() });
   } catch (e) {
     console.error('Update error:', e);
     res.status(500).json({ error: 'Update failed.' });

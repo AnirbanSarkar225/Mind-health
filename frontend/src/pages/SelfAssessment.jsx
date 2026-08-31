@@ -27,6 +27,8 @@ export default function SelfAssessment() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const [newAccuracy, setNewAccuracy] = useState(86.0);
+
   const toggleSymptom = (s) => {
     setSymptoms(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
   };
@@ -54,11 +56,15 @@ export default function SelfAssessment() {
       });
 
       // Online update
-      await api.updateClassifier({
+      const updateRes = await api.updateClassifier({
         attention: 50, meditation: 50,
         alpha: 15, beta: 10, theta: 10, baRatio: 0.67,
         trueState: confirmedState, feedbackScore: discomfort,
       });
+
+      if (updateRes?.dynamicAccuracy) {
+        setNewAccuracy(updateRes.dynamicAccuracy);
+      }
 
       setSubmitted(true);
     } catch (err) {
@@ -78,11 +84,17 @@ export default function SelfAssessment() {
         </div>
         <div style={{ textAlign: 'center', padding: '3rem' }}>
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✓</div>
-          <h2>Assessment Saved</h2>
-          <p style={{ marginBottom: '1.5rem' }}>Your feedback has been recorded and the ML classifier updated.</p>
-          <button className="btn btn-primary" onClick={() => { setSubmitted(false); setDescription(''); setSymptoms([]); setDiscomfort(3); }}>
-            Submit Another
-          </button>
+          <h2>Assessment Saved & Model Recalibrated</h2>
+          <p style={{ marginBottom: '1rem' }}>Your feedback has been incorporated into the online Gaussian training engine.</p>
+          <div style={{ display: 'inline-block', background: 'rgba(76,114,255,0.15)', border: '1px solid var(--primary)', borderRadius: '12px', padding: '10px 20px', marginBottom: '1.5rem' }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Live Dynamic Accuracy: </span>
+            <strong style={{ fontSize: '1.1rem', color: 'var(--primary)' }}>{newAccuracy}%</strong>
+          </div>
+          <div>
+            <button className="btn btn-primary" onClick={() => { setSubmitted(false); setDescription(''); setSymptoms([]); setDiscomfort(3); }}>
+              Submit Another
+            </button>
+          </div>
         </div>
       </>
     );

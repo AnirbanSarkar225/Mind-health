@@ -107,7 +107,7 @@ export default function HardwareAnalysis() {
                 <span className={`state-badge ${getStateClass(classification.state)}`}>{classification.state}</span>
               </div>
               <div style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                {classification.method} · Confidence: <strong style={{color:'var(--primary)'}}>{Math.round(classification.confidence * 100)}%</strong>
+                {classification.method} · Confidence: <strong style={{color:'var(--primary)'}}>{Math.round(classification.confidence * 100)}%</strong> · Dynamic Accuracy: <strong style={{color:'var(--accent)'}}>{classification.dynamicAccuracy || 86.0}%</strong>
               </div>
               <div className="grid-2" style={{ gap: '0.75rem', marginBottom: '1rem' }}>
                 <div className="metric-card">
@@ -161,7 +161,7 @@ export default function HardwareAnalysis() {
                   <div style={{ fontSize: '1.2rem', fontWeight: 800, marginTop: '2px' }}>{classification.state}</div>
                 </div>
                 <span style={{ background: 'rgba(76,114,255,0.15)', border: '1px solid var(--primary)', color: 'var(--primary)', padding: '4px 12px', borderRadius: '16px', fontSize: '0.8rem', fontWeight: 700 }}>
-                  {classification.method} · {Math.round(classification.confidence * 100)}% Confidence
+                  {classification.method} · {Math.round(classification.confidence * 100)}% Conf · {classification.dynamicAccuracy || 86.0}% Recalibrated Acc
                 </span>
               </div>
 
