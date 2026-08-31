@@ -137,10 +137,10 @@ export default function Landing() {
           <p>We provide world-class neuro-psychological assessment with our expert team. Personalized care utilizing advanced biosignal technology and Vedantic wisdom.</p>
           <div className="progress-container">
             <div className="progress-label">
-              <span className="progress-dot"></span> Assessment Accuracy 98%
+              <span className="progress-dot"></span> Assessment Accuracy 85.34%
             </div>
             <div className="progress-bar-track">
-              <div className="progress-bar-fill" style={{width:'98%'}}></div>
+              <div className="progress-bar-fill" style={{width:'85.34%'}}></div>
             </div>
           </div>
         </div>
