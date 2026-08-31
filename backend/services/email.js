@@ -1,10 +1,4 @@
-/**
- * Email OTP service — port of email_service.py.
- * Gmail SMTP on localhost, Resend HTTPS on Render.
- */
-
 import nodemailer from 'nodemailer';
-import crypto from 'crypto';
 
 const IS_RENDER = (process.env.RENDER || '').toLowerCase() === 'true';
 const RESEND_API_KEY = (process.env.RESEND_API_KEY || '').trim();
@@ -51,7 +45,7 @@ function getTransporter() {
 async function sendViaResend(recipientEmail, otp, username) {
   const apiKey = process.env.RESEND_API_KEY || RESEND_API_KEY;
   if (!apiKey) {
-    console.log('[EMAIL SERVICE] RESEND_API_KEY not configured.');
+    console.log('[EMAIL] RESEND_API_KEY not configured.');
     return false;
   }
   try {
@@ -69,11 +63,11 @@ async function sendViaResend(recipientEmail, otp, username) {
       }),
     });
     if (res.ok) {
-      console.log(`[EMAIL - RENDER] OTP sent to ${recipientEmail} via Resend`);
+      console.log(`[EMAIL] OTP sent to ${recipientEmail} via Resend`);
       return true;
     }
   } catch (e) {
-    console.log(`[EMAIL - RENDER] Resend error: ${e.message}`);
+    console.log(`[EMAIL] Resend error: ${e.message}`);
   }
   return false;
 }
@@ -88,10 +82,10 @@ async function sendViaSMTP(recipientEmail, otp, username) {
       text: `Hello ${username},\n\nYour verification code is: ${otp}\n\nExpires in 10 minutes.`,
       html: buildEmailHTML(username, otp),
     });
-    console.log(`[EMAIL - LOCAL] OTP sent to ${recipientEmail} via Gmail SMTP`);
+    console.log(`[EMAIL] OTP sent to ${recipientEmail} via Gmail SMTP`);
     return true;
   } catch (e) {
-    console.log(`[EMAIL - LOCAL] SMTP error: ${e.message}`);
+    console.log(`[EMAIL] SMTP error: ${e.message}`);
     return false;
   }
 }
@@ -103,7 +97,6 @@ export async function sendOTPEmail(recipientEmail, otp, username) {
   return sendViaSMTP(recipientEmail, otp, username);
 }
 
-// Fire and forget (non-blocking)
 export function sendOTPEmailAsync(recipientEmail, otp, username) {
   sendOTPEmail(recipientEmail, otp, username).catch(() => {});
 }

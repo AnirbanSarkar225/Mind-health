@@ -5,12 +5,10 @@ import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
-// POST /api/feedback — save feedback and problem
 router.post('/', authMiddleware, async (req, res) => {
   try {
     const { sessionId, confirmedState, discomfortLevel, notes, description, symptoms } = req.body;
     
-    // Save feedback
     const feedbackId = uuidv4();
     await query(
       `INSERT INTO feedback (id, session_id, user_id, confirmed_state, discomfort_level, notes)
@@ -18,7 +16,6 @@ router.post('/', authMiddleware, async (req, res) => {
       [feedbackId, sessionId || null, req.user.id, confirmedState, discomfortLevel, notes]
     );
 
-    // Save problem
     const probId = uuidv4();
     const symptomsStr = Array.isArray(symptoms) ? symptoms.join(',') : symptoms;
     

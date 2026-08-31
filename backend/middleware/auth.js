@@ -1,7 +1,3 @@
-/**
- * JWT authentication middleware.
- */
-
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'gita-neurosync-jwt-secret-v4-2026';

@@ -3,9 +3,8 @@ import { MentalState, STATE_INDEX, STATE_LABELS } from './states.js';
 export const ML_CONFIDENCE_THRESHOLD = 0.50;
 const TEMPERATURE_SCALE = 2.5;
 
-// ── Dynamic Online Recalibration State ───────────────────────────────────────
 let baselineEvaluations = 4000;
-let correctEvaluations = 3440; // Baseline: 86.0% (from 4,000 Monte Carlo trials)
+let correctEvaluations = 3440;
 let totalFeedbackUpdates = 0;
 
 export function getDynamicAccuracy() {
@@ -21,7 +20,6 @@ export function recordFeedbackAccuracy(wasHelpful = true) {
   totalFeedbackUpdates += 1;
 }
 
-// ── Pure EEG Clinical Deterministic Rules ────────────────────────────────────
 export function classifyRuleBased(signals) {
   const {
     eegAttention = 50,
@@ -44,8 +42,6 @@ export function classifyRuleBased(signals) {
   return MentalState.EQUILIBRIUM;
 }
 
-// ── Calibrated Gaussian Naive Bayes ML Classifier ────────────────────────────
-// Feature order: [att, med, alpha, beta, theta, ba_ratio, rel_alpha, rel_beta, feedback]
 const CLASS_PARAMS = {
   [MentalState.ANXIETY]: {
     mean: [80, 18, 9, 28, 7, 3.1, 0.20, 0.64, 4.5],
@@ -155,7 +151,6 @@ export function classify(signals, useML = true) {
 
   const ml = classifyML(signals);
 
-  // Safety Gating: If signal is extreme outlier or margin is too narrow, engage clinical rules
   if (ml.confidence < ML_CONFIDENCE_THRESHOLD || ml.probMargin < 0.10 || ml.outlierDist > 4.8) {
     return {
       state: ruleState,

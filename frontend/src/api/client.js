@@ -1,7 +1,3 @@
-/**
- * API client with JWT token management.
- */
-
 const API_BASE = '/api';
 
 function getToken() {
@@ -39,22 +35,18 @@ async function request(path, options = {}) {
 }
 
 export const api = {
-  // Auth
   register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
   login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   verifyOTP: (code) => request('/auth/verify-otp', { method: 'POST', body: JSON.stringify({ code }) }),
   resendOTP: () => request('/auth/resend-otp', { method: 'POST' }),
   getMe: () => request('/auth/me'),
 
-  // Sessions
   saveSessions: (body) => request('/sessions', { method: 'POST', body: JSON.stringify(body) }),
   getSessions: (limit = 50) => request(`/sessions?limit=${limit}`),
   getStats: () => request('/sessions/stats'),
 
-  // Feedback
   saveFeedback: (body) => request('/feedback', { method: 'POST', body: JSON.stringify(body) }),
 
-  // Classify
   classify: (body) => request('/classify', { method: 'POST', body: JSON.stringify(body) }),
   updateClassifier: (body) => request('/classify/update', { method: 'POST', body: JSON.stringify(body) }),
 };

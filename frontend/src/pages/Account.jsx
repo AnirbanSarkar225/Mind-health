@@ -30,26 +30,23 @@ export default function Account() {
         format: 'a4',
       });
 
-      // ── Header Styling ──────────────────────────────────────────────────
-      doc.setFillColor(76, 114, 255); // #4C72FF
+      doc.setFillColor(76, 114, 255);
       doc.rect(14, 12, 182, 2.5, 'F');
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(16);
-      doc.setTextColor(15, 23, 42); // #0F172A
+      doc.setTextColor(15, 23, 42);
       doc.text('GITA-NEUROSYNC — CLINICAL NEURO-SPECTRAL REPORT', 14, 22);
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
-      doc.setTextColor(100, 116, 139); // #64748B
+      doc.setTextColor(100, 116, 139);
       doc.text(`Patient / User: ${user?.username || 'User'} (${user?.email || 'N/A'})  ·  Generated: ${reportDate}`, 14, 28);
 
-      // ── Metadata Cards Box ──────────────────────────────────────────────
-      doc.setFillColor(248, 250, 252); // #F8FAFC
-      doc.setDrawColor(226, 232, 240); // #E2E8F0
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(226, 232, 240);
       doc.roundedRect(14, 33, 182, 22, 2, 2, 'FD');
 
-      // Stat 1: Total Sessions
       doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(100, 116, 139);
@@ -58,7 +55,6 @@ export default function Account() {
       doc.setTextColor(15, 23, 42);
       doc.text(`${s.totalSessions}`, 22, 48);
 
-      // Stat 2: Dominant State
       doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(100, 116, 139);
@@ -67,16 +63,14 @@ export default function Account() {
       doc.setTextColor(76, 114, 255);
       doc.text(`${s.mostFrequentState}`, 80, 48);
 
-      // Stat 3: Dynamic Accuracy
       doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(100, 116, 139);
       doc.text('DYNAMIC ACCURACY', 142, 40);
       doc.setFontSize(13);
-      doc.setTextColor(16, 185, 129); // #10B981
+      doc.setTextColor(16, 185, 129);
       doc.text(`${s.dynamicAccuracy || 86.0}%`, 142, 48);
 
-      // ── Historical Telemetry Table ───────────────────────────────────────
       doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(15, 23, 42);
@@ -119,7 +113,6 @@ export default function Account() {
         margin: { left: 14, right: 14 },
       });
 
-      // ── Footer ───────────────────────────────────────────────────────────
       const pageCount = doc.internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
@@ -132,7 +125,6 @@ export default function Account() {
         );
       }
 
-      // Direct file download
       const filename = `gita-neurosync-clinical-report-${user?.username || 'user'}.pdf`;
       doc.save(filename);
     } catch (e) {
@@ -153,7 +145,6 @@ export default function Account() {
         <p>Profile, security, and data export</p>
       </div>
 
-      {/* Profile Header */}
       <div className="profile-header">
         <div className="profile-avatar">{initial}</div>
         <div className="profile-info">
@@ -169,7 +160,6 @@ export default function Account() {
       </div>
 
       <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
-        {/* Personal Info */}
         <div>
           <div className="section-label">PERSONAL INFORMATION</div>
           <div className="card-subtle">
@@ -180,7 +170,6 @@ export default function Account() {
           </div>
         </div>
 
-        {/* Activity */}
         <div>
           <div className="section-label">ACCOUNT ACTIVITY</div>
           <div className="card-subtle">
@@ -195,7 +184,6 @@ export default function Account() {
       </div>
 
       <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
-        {/* Security */}
         <div>
           <div className="section-label">SECURITY & PRIVACY</div>
           <div className="card-subtle">
@@ -205,7 +193,6 @@ export default function Account() {
           </div>
         </div>
 
-        {/* Data Export */}
         <div>
           <div className="section-label">DATA EXPORT</div>
           <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -219,7 +206,6 @@ export default function Account() {
 
       <hr className="divider" />
 
-      {/* Sign Out */}
       <div style={{ display: 'flex', justifyContent: 'center' }}>
         <button className="btn btn-dark" onClick={logout}>Sign Out</button>
       </div>

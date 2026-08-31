@@ -2,13 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 
-const STATES = [
-  'ACUTE ANXIETY (Visada)',
-  'DEPRESSION / LETHARGY (Tamas)',
-  'STRESS & AGITATION (Krodha)',
-  'EQUILIBRIUM (Sattva)',
-];
-
 const BAR_COLORS = ['var(--red-soft)', 'var(--blue-soft)', 'var(--amber-soft)', 'var(--green-soft)'];
 const BAR_LABELS = ['Anxiety', 'Depression', 'Stress', 'Equilibrium'];
 
@@ -53,7 +46,6 @@ export default function HardwareAnalysis() {
       });
       setClassification(result);
 
-      // Save the EXACT LIVE SENSOR READINGS to session database
       await api.saveSessions({
         attention: signals.attention,
         meditation: signals.meditation,
@@ -84,7 +76,6 @@ export default function HardwareAnalysis() {
         <p>BioAmp EXG Pill telemetry, real-time brainwave spectrum analysis, and AI Vedantic remediation</p>
       </div>
 
-      {/* Hardware Config */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h4>Signal Source — BioAmp EEG Calibration</h4>
@@ -111,7 +102,6 @@ export default function HardwareAnalysis() {
         </div>
       </div>
 
-      {/* Telemetry Gauges */}
       <div className="section-label">EEG TELEMETRY METRICS</div>
       <div className="gauges-row">
         <GaugeCard label="EEG Attention" value={signals.attention} unit="/100" />
@@ -121,7 +111,6 @@ export default function HardwareAnalysis() {
         <GaugeCard label="Beta/Alpha Ratio" value={signals.baRatio} unit="ratio" />
       </div>
 
-      {/* Assessment + Waveform */}
       {classification && (
         <>
           <div className="section-label" style={{ marginTop: '1rem' }}>ASSESSMENT & CLASSIFICATION</div>
@@ -172,7 +161,6 @@ export default function HardwareAnalysis() {
             </div>
           </div>
 
-          {/* Gita Remediation */}
           {verse && (
             <>
               <hr className="divider" />
@@ -181,7 +169,6 @@ export default function HardwareAnalysis() {
                   <h2 style={{ margin: '0 0 4px' }}>Gita Remediation & Vedantic Wisdom</h2>
                   <p style={{ margin: 0 }}>Personalised philosophical grounding and Sanskrit prescriptions for {classification.state}</p>
                 </div>
-                {/* Multilingual Switcher */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: 'var(--bg-subtle)', padding: '4px 6px', borderRadius: '10px', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginRight: '4px' }}>Language:</span>
                   <button type="button" className={`btn btn-sm ${lang === 'en' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setLang('en')} style={{ fontSize: '0.78rem', padding: '3px 9px' }}>
@@ -209,7 +196,6 @@ export default function HardwareAnalysis() {
                 </span>
               </div>
 
-              {/* Prominent Physical Activity & Movement Card */}
               {(() => {
                 const pAct = lang === 'hi' ? verse.physicalActivity_hi || verse.physicalActivity : lang === 'bn' ? verse.physicalActivity_bn || verse.physicalActivity : lang === 'hl' ? verse.physicalActivity_hl || verse.physicalActivity : verse.physicalActivity;
                 if (!pAct) return null;

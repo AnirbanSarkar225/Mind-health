@@ -1,7 +1,3 @@
-/**
- * Auth context provider — manages user state, login, register, logout.
- */
-
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api, setToken, clearToken } from '../api/client';
 
@@ -12,7 +8,6 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [needsVerification, setNeedsVerification] = useState(false);
 
-  // Check for existing session on mount
   useEffect(() => {
     const token = localStorage.getItem('gns_token');
     if (token) {

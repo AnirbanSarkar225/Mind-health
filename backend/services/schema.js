@@ -1,7 +1,3 @@
-/**
- * DDL — SQLite Table creation
- */
-
 import { query } from '../config/db.js';
 
 const TABLES_SQL = `
@@ -76,10 +72,8 @@ CREATE INDEX IF NOT EXISTS idx_otp_user         ON otp_codes(user_id);
 `;
 
 export async function createTables() {
-  // Split statements for SQLite which doesn't support multiple statements in run()
   const statements = TABLES_SQL.split(';').map(s => s.trim()).filter(s => s.length > 0);
   for (const stmt of statements) {
     await query(stmt);
   }
-  console.log('  [OK] SQLite Database and tables ready');
 }

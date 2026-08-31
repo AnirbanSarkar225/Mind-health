@@ -34,7 +34,6 @@ export default function Dashboard() {
         <p>Your AI-powered neuro-psychological dashboard — overview and clinical insights</p>
       </div>
 
-      {/* Summary Stats */}
       <div className="dashboard-stats">
         <div className="dash-stat-card">
           <div className="stat-label">Total Sessions</div>
@@ -63,7 +62,6 @@ export default function Dashboard() {
 
       <hr className="divider" />
 
-      {/* Insight Row */}
       <div className="grid-2">
         <div>
           <div className="section-label">LATEST READING SNAPSHOT</div>
@@ -146,7 +144,6 @@ export default function Dashboard() {
 
       <hr className="divider" />
 
-      {/* Quick Actions */}
       <div className="section-label">QUICK ACTIONS</div>
       <div className="grid-3" style={{ gap: '1rem' }}>
         <button className="btn btn-secondary btn-block" onClick={() => navigate('/hardware')}>Start Hardware Reading</button>

@@ -9,7 +9,6 @@ const SYMPTOM_OPTIONS = [
   'Restlessness', 'Sadness', 'Loss of interest',
 ];
 
-// Targeted Clinical Questionnaire Generator
 function generateTargetedQuestions(text = '') {
   const t = text.toLowerCase();
   
@@ -73,7 +72,6 @@ function generateTargetedQuestions(text = '') {
     ];
   }
 
-  // Balanced / General Cognitive Diagnostic
   return [
     {
       id: 'q1',
@@ -93,7 +91,6 @@ function generateTargetedQuestions(text = '') {
   ];
 }
 
-// Tailored Clinical Exercises & Suggestions by State
 const CLINICAL_EXERCISES = {
   'ACUTE ANXIETY (Visada)': {
     somaticExercise: '4-4-6 Extended Exhalation Breathing — Inhale for 4 seconds, hold for 4 seconds, exhale slowly for 6 seconds. Repeat 5 cycles to stimulate the vagus nerve and slow elevated heart rate.',
@@ -117,7 +114,6 @@ const CLINICAL_EXERCISES = {
   },
 };
 
-// AI State Inferencing
 function inferState(symptoms, discomfort, desc, additionalNotes, answers) {
   let anxietyScore = 0;
   let depressionScore = 0;
@@ -160,30 +156,22 @@ function inferState(symptoms, discomfort, desc, additionalNotes, answers) {
 export default function SelfAssessment() {
   const navigate = useNavigate();
 
-  // Progressive Stage: 1 (Problem Description) | 2 (Questions & Symptoms) | 3 (Result Analysis & Exercises)
   const [step, setStep] = useState(1);
-
-  // Stage 1 State
   const [description, setDescription] = useState('');
-
-  // Stage 2 State (NO prechecked options!)
   const [dynamicQuestions, setDynamicQuestions] = useState([]);
-  const [answers, setAnswers] = useState({}); // Empty by default!
+  const [answers, setAnswers] = useState({});
   const [symptoms, setSymptoms] = useState([]);
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [discomfort, setDiscomfort] = useState(3);
 
-  // Stage 3 & Multilingual State ('en' | 'hi' | 'bn' | 'hl')
   const [lang, setLang] = useState('en');
   const [diagnosedState, setDiagnosedState] = useState('');
   const [newAccuracy, setNewAccuracy] = useState(86.0);
   const [resultVerse, setResultVerse] = useState(null);
-  const [savedSessionId, setSavedSessionId] = useState(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Step 1 -> Step 2
   const handleProceedToQuestions = (e) => {
     e.preventDefault();
     if (!description.trim()) {
@@ -193,7 +181,7 @@ export default function SelfAssessment() {
     setError('');
     const questions = generateTargetedQuestions(description);
     setDynamicQuestions(questions);
-    setAnswers({}); // Do NOT precheck any options!
+    setAnswers({});
     setStep(2);
   };
 
@@ -205,7 +193,6 @@ export default function SelfAssessment() {
     setAnswers(prev => ({ ...prev, [qId]: option }));
   };
 
-  // Step 2 -> Step 3 (Submit & Analyze)
   const handleFinalSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -216,7 +203,6 @@ export default function SelfAssessment() {
 
       const combinedNotes = `Description: ${description} | Q&A: ${Object.entries(answers).map(([k, v]) => `${k}:${v}`).join('; ')} | Other: ${additionalNotes}`;
 
-      // Save a clean cognitive self-assessment session (NO arbitrary fake EEG hardware numbers)
       const sessRes = await api.saveSessions({
         attention: 0,
         meditation: 0,
@@ -229,11 +215,6 @@ export default function SelfAssessment() {
         confidence: 0.95,
       });
 
-      if (sessRes?.id) {
-        setSavedSessionId(sessRes.id);
-      }
-
-      // Save feedback + problem
       await api.saveFeedback({
         sessionId: sessRes.id,
         confirmedState: inferred,
@@ -243,7 +224,6 @@ export default function SelfAssessment() {
         symptoms,
       });
 
-      // Online update
       const updateRes = await api.updateClassifier({
         attention: 50,
         meditation: 50,
@@ -282,7 +262,6 @@ export default function SelfAssessment() {
     setError('');
   };
 
-  // Multilingual content helpers
   const getConcept = () => {
     if (!resultVerse) return '';
     if (lang === 'hi') return resultVerse.concept_hi || resultVerse.concept;
@@ -332,7 +311,6 @@ export default function SelfAssessment() {
         &larr; Dashboard
       </button>
 
-      {/* Progress Breadcrumbs */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: step >= 1 ? 1 : 0.4 }}>
           <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: step === 1 ? 'var(--primary)' : 'var(--sage)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.78rem', fontWeight: 700 }}>
@@ -358,9 +336,6 @@ export default function SelfAssessment() {
 
       {error && <div className="form-error" style={{ marginBottom: '1rem' }}>{error}</div>}
 
-      {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* PART 1: SIMPLE PROBLEM DESCRIPTION INPUT                          */}
-      {/* ─────────────────────────────────────────────────────────────────── */}
       {step === 1 && (
         <div className="card" style={{ maxWidth: 700, margin: '0 auto 3rem', padding: '2rem' }}>
           <div className="page-header" style={{ marginBottom: '1.25rem', padding: 0 }}>
@@ -391,9 +366,6 @@ export default function SelfAssessment() {
         </div>
       )}
 
-      {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* PART 2: DYNAMIC QUESTIONS (NOT PRECHECKED) + SYMPTOMS + OTHER BOX  */}
-      {/* ─────────────────────────────────────────────────────────────────── */}
       {step === 2 && (
         <form onSubmit={handleFinalSubmit}>
           <div className="page-header" style={{ marginBottom: '1.5rem' }}>
@@ -401,7 +373,6 @@ export default function SelfAssessment() {
             <p>Answer the clinical follow-up questions generated from your description, select symptoms, and add any other details.</p>
           </div>
 
-          {/* User's Original Problem Summary */}
           <div className="card-subtle" style={{ marginBottom: '1.5rem', background: 'rgba(76,114,255,0.06)', border: '1px solid rgba(76,114,255,0.2)', padding: '12px 18px' }}>
             <span style={{ fontSize: '0.78rem', textTransform: 'uppercase', color: 'var(--primary)', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
               Your Problem Statement:
@@ -412,7 +383,6 @@ export default function SelfAssessment() {
           </div>
 
           <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
-            {/* Left Column: Targeted Cognitive Questions (Unchecked) */}
             <div className="card">
               <div className="section-label">TARGETED CLINICAL QUESTIONS</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.35rem' }}>
@@ -447,7 +417,6 @@ export default function SelfAssessment() {
                 ))}
               </div>
 
-              {/* Other / Additional Details Box */}
               <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border)', paddingTop: '1.25rem' }}>
                 <div className="section-label">OTHER / ADDITIONAL DETAILS</div>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
@@ -463,9 +432,7 @@ export default function SelfAssessment() {
               </div>
             </div>
 
-            {/* Right Column: Symptoms Checklist + Discomfort Slider */}
             <div>
-              {/* Symptoms Checklist */}
               <div className="card" style={{ marginBottom: '1.5rem' }}>
                 <div className="section-label">SYMPTOM CHECKLIST (SELECT ALL THAT APPLY)</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
@@ -488,7 +455,6 @@ export default function SelfAssessment() {
                 )}
               </div>
 
-              {/* Discomfort Slider */}
               <div className="card">
                 <div className="section-label">DISCOMFORT & TENSION LEVEL</div>
                 <div className="slider-group" style={{ margin: '1rem 0' }}>
@@ -519,9 +485,6 @@ export default function SelfAssessment() {
         </form>
       )}
 
-      {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* PART 3: CLINICAL REPORT (PHYSICAL ACTIVITY, EXERCISES & REMEDY)    */}
-      {/* ─────────────────────────────────────────────────────────────────── */}
       {step === 3 && (
         <>
           <div className="page-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
@@ -530,7 +493,6 @@ export default function SelfAssessment() {
               <p>Prescribed physical activity, somatic exercises, behavioral suggestions, and Vedantic grounding.</p>
             </div>
 
-            {/* Multilingual Switcher: English, Hindi, Bengali, Hinglish */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: 'var(--bg-subtle)', padding: '4px 6px', borderRadius: '10px', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginRight: '4px' }}>Language:</span>
               <button
@@ -568,7 +530,6 @@ export default function SelfAssessment() {
             </div>
           </div>
 
-          {/* Top Status Banner */}
           <div className="card" style={{ marginBottom: '1.5rem', background: 'linear-gradient(135deg, rgba(76,114,255,0.08), rgba(16,185,129,0.08))', border: '1px solid rgba(76,114,255,0.25)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
@@ -592,7 +553,6 @@ export default function SelfAssessment() {
             </div>
           </div>
 
-          {/* PROMINENT DEDICATED PHYSICAL ACTIVITY & MOVEMENT CARD */}
           {physicalAct && (
             <div className="card" style={{ marginBottom: '1.5rem', background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(76,114,255,0.05))', borderLeft: '5px solid var(--sage)', borderTop: '1px solid var(--border)', borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -618,7 +578,6 @@ export default function SelfAssessment() {
             </div>
           )}
 
-          {/* Section 1: Prescribed Exercises & Actionable Suggestions */}
           <div className="card" style={{ marginBottom: '1.5rem', borderLeft: '4px solid var(--primary)' }}>
             <div className="section-label">RECOMMENDED COGNITIVE & LIFESTYLE EXERCISES</div>
             <div className="grid-3" style={{ gap: '1rem', marginTop: '0.75rem' }}>
@@ -651,9 +610,7 @@ export default function SelfAssessment() {
             </div>
           </div>
 
-          {/* Section 2: Summary + Prescribed Vedantic Remedy */}
           <div className="grid-2" style={{ marginBottom: '2rem' }}>
-            {/* Left Column: Logged Profile Details */}
             <div className="card">
               <div className="section-label">PATIENT REPORT PROFILE</div>
               
@@ -701,7 +658,6 @@ export default function SelfAssessment() {
               </div>
             </div>
 
-            {/* Right Column: Prescribed Vedantic Remedy */}
             {resultVerse && (
               <div className="card" style={{ borderLeft: '4px solid var(--primary)' }}>
                 <div className="section-label">PRESCRIBED VEDANTIC REMEDY & SHLOKA</div>
@@ -715,14 +671,12 @@ export default function SelfAssessment() {
                   </span>
                 </div>
 
-                {/* Sanskrit text */}
                 <div className="sanskrit-block" style={{ marginBottom: '0.75rem' }}>
                   {getSanskritText().split('\n').map((l, i) => (
                     <span key={i}>{l}<br /></span>
                   ))}
                 </div>
 
-                {/* Transliteration */}
                 {(lang === 'en' || lang === 'hl') && (
                   <div className="transliteration" style={{ marginBottom: '0.75rem', fontSize: '0.85rem' }}>
                     {resultVerse.transliteration.split('\n').map((l, i) => (
@@ -731,7 +685,6 @@ export default function SelfAssessment() {
                   </div>
                 )}
 
-                {/* Translation */}
                 <div className="translation-block" style={{ marginBottom: '1rem', fontSize: '0.88rem' }}>
                   <strong>
                     {lang === 'hi' ? 'सीधा अर्थ (भावार्थ):' : lang === 'bn' ? 'বঙ্গানুবাদ ও ভাবার্থ:' : lang === 'hl' ? 'Direct Meaning (Bhavarth):' : 'Direct Meaning:'}
@@ -740,7 +693,6 @@ export default function SelfAssessment() {
                   {getTranslation()}
                 </div>
 
-                {/* 3-Step Somatic Grounding */}
                 <div className="section-label" style={{ marginTop: '1rem' }}>
                   {lang === 'hi' ? '3-चरणीय स्थिरता अभ्यास' : lang === 'bn' ? '৩-পর্যায়ের মানসিক প্রশান্তি অনুশীলন' : lang === 'hl' ? '3-STAGE SOMATIC GROUNDING (STHIRATA ABHYAS)' : '3-STAGE SOMATIC GROUNDING TRAJECTORY'}
                 </div>
@@ -758,12 +710,11 @@ export default function SelfAssessment() {
             )}
           </div>
 
-          {/* Action Buttons */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '3rem' }}>
             <button className="btn btn-primary" onClick={resetAll}>
               Submit Another Assessment
             </button>
-            <button className="btn btn-secondary" onClick={() => navigate('/sessions')}>
+            <button className="btn btn-secondary" onClick={() => navigate('/history')}>
               View in Session History
             </button>
             <button className="btn btn-secondary" onClick={() => navigate('/')}>

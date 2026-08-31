@@ -8,7 +8,6 @@ import { v4 as uuidv4 } from 'uuid';
 const router = Router();
 const BCRYPT_ROUNDS = 10;
 
-// POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -31,7 +30,6 @@ router.post('/register', async (req, res) => {
 
     const user = { id: userId, username, email, email_verified: 0 };
 
-    // Generate and send OTP
     const otp = generateOTP();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
     const otpId = uuidv4();
@@ -50,7 +48,6 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -78,7 +75,6 @@ router.post('/login', async (req, res) => {
     const token = generateToken(safeUser);
 
     if (!user.email_verified) {
-      // Send new OTP
       const otp = generateOTP();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
       const otpId = uuidv4();
@@ -95,7 +91,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// POST /api/auth/verify-otp
 router.post('/verify-otp', authMiddleware, async (req, res) => {
   try {
     const { code } = req.body;
@@ -136,7 +131,6 @@ router.post('/verify-otp', authMiddleware, async (req, res) => {
   }
 });
 
-// POST /api/auth/resend-otp
 router.post('/resend-otp', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -155,7 +149,6 @@ router.post('/resend-otp', authMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/auth/me
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const result = await query(

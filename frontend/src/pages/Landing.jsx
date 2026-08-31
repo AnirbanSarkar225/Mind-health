@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { FiCheckCircle, FiArrowRight, FiHeart, FiShield, FiClock, FiUsers } from 'react-icons/fi';
-import { FaUserDoctor, FaBedPulse, FaTruckMedical, FaHandHoldingMedical, FaStethoscope, FaCalendarCheck, FaNotesMedical, FaHeartPulse } from 'react-icons/fa6';
+import { FiCheckCircle, FiArrowRight, FiHeart, FiShield, FiUsers } from 'react-icons/fi';
+import { FaBedPulse, FaTruckMedical, FaHandHoldingMedical, FaNotesMedical, FaHeartPulse } from 'react-icons/fa6';
 
 const CONDITIONS = [
   { title: 'Acute Anxiety', sanskrit: 'Visada', bio: 'High Beta & Tachycardia', color: '#FFE4E6' },
@@ -27,7 +27,6 @@ export default function Landing() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
@@ -69,7 +68,6 @@ export default function Landing() {
     setLoading(false);
   };
 
-  // OTP Verification screen
   if (needsVerification) {
     return (
       <div style={{ maxWidth: 420, margin: '4rem auto', textAlign: 'center' }}>
@@ -91,7 +89,6 @@ export default function Landing() {
 
   return (
     <>
-      {/* Navbar */}
       <nav className="navbar">
         <div className="navbar-logo">
           <FiHeart /> Gita-NeuroSync
@@ -108,7 +105,6 @@ export default function Landing() {
         </div>
       </nav>
 
-      {/* Hero */}
       <section className="hero-section">
         <div className="hero-content">
           <div className="hero-badge">
@@ -129,7 +125,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Stats Section */}
       <section className="stats-section">
         <div className="stats-text">
           <h3>Expert Care <span className="highlight">✦</span></h3>
@@ -168,7 +163,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Modules */}
       <div id="specialists" className="section-label" style={{textAlign:'center',marginBottom:'1.5rem'}}>AI INTELLIGENCE MODULES</div>
       <section className="doctors-list">
         {MODULES.map((mod, i) => (
@@ -185,7 +179,6 @@ export default function Landing() {
         ))}
       </section>
 
-      {/* Conditions */}
       <div id="conditions" style={{textAlign:'center', marginBottom:'2rem'}}>
         <div className="section-label" style={{color:'var(--secondary)'}}>CONDITIONS</div>
         <h2>Neuro-States We Measure & Remediate</h2>
@@ -201,7 +194,6 @@ export default function Landing() {
         ))}
       </div>
 
-      {/* Bottom Section */}
       <section className="bottom-section" id="about">
         <div className="bottom-cards">
           <div className="info-card gradient-bg">
@@ -241,7 +233,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Auth Section */}
       <div id="auth-section" style={{textAlign:'center', marginTop:'3rem', marginBottom:'2rem'}}>
         <h2>Get Started</h2>
         <p>Sign in or create an account to access your personalised dashboard</p>
@@ -291,7 +282,6 @@ export default function Landing() {
         )}
       </div>
 
-      {/* Footer */}
       <div className="footer">
         <div className="footer-brand">Gita-NeuroSync</div>
         Confidential, encrypted, and biomedical psychophysiology architecture<br />

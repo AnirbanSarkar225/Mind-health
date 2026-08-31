@@ -6,7 +6,6 @@ const router = Router();
 
 let mlUpdates = 0;
 
-// POST /api/classify — classify EEG biosignal readings
 router.post('/', (req, res) => {
   try {
     const {
@@ -58,7 +57,6 @@ router.post('/', (req, res) => {
   }
 });
 
-// POST /api/classify/update — online ML update from user feedback
 router.post('/update', (req, res) => {
   try {
     const {

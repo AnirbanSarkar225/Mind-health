@@ -6,7 +6,6 @@ import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
-// POST /api/sessions — save an EEG session
 router.post('/', authMiddleware, async (req, res) => {
   try {
     const {
@@ -32,7 +31,6 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/sessions — list user sessions with joined problem & feedback details
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit || '100');
@@ -57,7 +55,6 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/sessions/stats — get dashboard stats
 router.get('/stats', authMiddleware, async (req, res) => {
   try {
     const sessRes = await query(

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 
-// Clinical exercises by state
 const CLINICAL_EXERCISES = {
   'ACUTE ANXIETY (Visada)': {
     somatic: '4-4-6 Extended Exhalation Breathing — Inhale 4s, hold 4s, exhale slowly 6s. Repeat 5 cycles to stimulate the vagus nerve.',
@@ -26,7 +25,6 @@ const CLINICAL_EXERCISES = {
   },
 };
 
-// Gita Verses Knowledge Base with Multilingual Translations
 const GITA_VERSES = {
   'ACUTE ANXIETY (Visada)': {
     chapter: 2, verse: 47,
@@ -170,8 +168,6 @@ export default function SessionHistory() {
   const navigate = useNavigate();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Selected session for detailed inspection modal
   const [selectedSession, setSelectedSession] = useState(null);
   const [modalLang, setModalLang] = useState('en');
 
@@ -183,8 +179,6 @@ export default function SessionHistory() {
   }, []);
 
   const total = sessions.length;
-
-  // Filter hardware sessions vs self-assessment sessions
   const hardwareSessions = sessions.filter(s => !s.classifier_method?.toLowerCase().includes('self'));
   const hwCount = hardwareSessions.length;
   const avgBAR = hwCount > 0 ? (hardwareSessions.reduce((a, s) => a + (s.beta_alpha_ratio || 0), 0) / hwCount).toFixed(2) : '0.00';
@@ -236,7 +230,6 @@ export default function SessionHistory() {
         <p>Click on any session row to inspect comprehensive clinical reports, sensor telemetry, and tailored exercises</p>
       </div>
 
-      {/* Summary Stats */}
       <div className="dashboard-stats" style={{ gridTemplateColumns: 'repeat(3,1fr)', marginBottom: '1.5rem' }}>
         <div className="dash-stat-card">
           <div className="stat-label">Total Logged Sessions</div>
@@ -252,7 +245,6 @@ export default function SessionHistory() {
         </div>
       </div>
 
-      {/* State Distribution */}
       {Object.keys(dist).length > 0 && (
         <div className="card" style={{ marginBottom: '1.5rem' }}>
           <div className="section-label">CLINICAL STATE DISTRIBUTION</div>
@@ -273,7 +265,6 @@ export default function SessionHistory() {
         </div>
       )}
 
-      {/* Export Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
         <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
           Tip: Click any session row to inspect full notes, exercises, or sensor details.
@@ -283,7 +274,6 @@ export default function SessionHistory() {
         </button>
       </div>
 
-      {/* Sessions Table */}
       {total === 0 ? (
         <div className="card-subtle" style={{ textAlign: 'center', padding: '3rem' }}>
           No sessions recorded yet. Start a reading from Hardware Analysis or log a Self-Assessment.
@@ -374,9 +364,6 @@ export default function SessionHistory() {
         </div>
       )}
 
-      {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* SESSION INSPECTOR MODAL                                            */}
-      {/* ─────────────────────────────────────────────────────────────────── */}
       {selectedSession && (() => {
         const isSelf = selectedSession.classifier_method?.toLowerCase().includes('self');
         const verse = getVerseForSession(selectedSession.detected_state);
@@ -408,7 +395,6 @@ export default function SessionHistory() {
           return verse.sanskrit;
         };
 
-        // Parse symptoms safely
         let symptomsList = [];
         if (selectedSession.problem_symptoms) {
           try {
@@ -439,7 +425,6 @@ export default function SessionHistory() {
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Modal Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--border)', paddingBottom: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '4px' }}>
@@ -459,7 +444,6 @@ export default function SessionHistory() {
                   </span>
                 </div>
 
-                {/* Multilingual Switcher & Close */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'var(--bg-subtle)', padding: '3px 6px', borderRadius: '8px', border: '1px solid var(--border)' }}>
                     <button type="button" className={`btn btn-sm ${modalLang === 'en' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setModalLang('en')} style={{ fontSize: '0.72rem', padding: '2px 6px' }}>En</button>
@@ -477,10 +461,8 @@ export default function SessionHistory() {
                 </div>
               </div>
 
-              {/* ── CASE A: SELF-ASSESSMENT DETAILS (EXERCISES & SUGGESTIONS) ── */}
               {isSelf ? (
                 <>
-                  {/* Problem & Symptoms Banner */}
                   <div className="card-subtle" style={{ marginBottom: '1.25rem', background: 'rgba(76,114,255,0.05)', border: '1px solid rgba(76,114,255,0.15)' }}>
                     <div style={{ marginBottom: '0.5rem' }}>
                       <strong style={{ fontSize: '0.85rem', color: 'var(--primary)', display: 'block' }}>Patient Problem Statement:</strong>
@@ -505,7 +487,6 @@ export default function SessionHistory() {
                     )}
                   </div>
 
-                  {/* Prominent Physical Activity & Movement Card */}
                   {(() => {
                     const pAct = modalLang === 'hi' ? verse.physicalActivity_hi || verse.physicalActivity : modalLang === 'bn' ? verse.physicalActivity_bn || verse.physicalActivity : modalLang === 'hl' ? verse.physicalActivity_hl || verse.physicalActivity : verse.physicalActivity;
                     if (!pAct) return null;
@@ -535,7 +516,6 @@ export default function SessionHistory() {
                     );
                   })()}
 
-                  {/* Recommended Exercises & Suggestions */}
                   <div style={{ marginBottom: '1.25rem' }}>
                     <div className="section-label" style={{ color: 'var(--primary)' }}>COGNITIVE & LIFESTYLE EXERCISES</div>
                     <div className="grid-3" style={{ gap: '0.75rem', marginTop: '0.5rem' }}>
@@ -567,7 +547,6 @@ export default function SessionHistory() {
                   </div>
                 </>
               ) : (
-                /* ── CASE B: HARDWARE ANALYSIS (RECORDED SENSOR TELEMETRY) ── */
                 <div style={{ marginBottom: '1.25rem' }}>
                   <div className="section-label">ACTUAL RECORDED HARDWARE SENSOR TELEMETRY</div>
                   <div className="grid-4" style={{ gap: '0.75rem', marginTop: '0.5rem', marginBottom: '1rem' }}>
@@ -591,7 +570,6 @@ export default function SessionHistory() {
                 </div>
               )}
 
-              {/* Vedantic Remedy & Shloka Section */}
               <div className="card" style={{ borderLeft: '4px solid var(--primary)', padding: '1.25rem', marginTop: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <span style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '1rem' }}>
@@ -602,18 +580,15 @@ export default function SessionHistory() {
                   </span>
                 </div>
 
-                {/* Sanskrit text */}
                 <div className="sanskrit-block" style={{ marginBottom: '8px', fontSize: '0.95rem' }}>
                   {getSanskrit().split('\n').map((l, i) => <span key={i}>{l}<br /></span>)}
                 </div>
 
-                {/* Translation */}
                 <div className="translation-block" style={{ marginBottom: '10px', fontSize: '0.85rem' }}>
                   <strong>{modalLang === 'hi' ? 'सीधा अर्थ:' : modalLang === 'bn' ? 'বঙ্গানুবাদ:' : modalLang === 'hl' ? 'Direct Meaning:' : 'Direct Translation:'}</strong><br />
                   {getTranslation()}
                 </div>
 
-                {/* Somatic Grounding */}
                 <div className="section-label" style={{ marginTop: '0.75rem' }}>
                   {modalLang === 'hi' ? '3-चरणीय स्थिरता अभ्यास' : modalLang === 'bn' ? '৩-পর্যায়ের মানসিক প্রশান্তি অনুশীলন' : '3-STAGE SOMATIC GROUNDING'}
                 </div>
@@ -629,7 +604,6 @@ export default function SessionHistory() {
                 </div>
               </div>
 
-              {/* Close Button */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setSelectedSession(null)}>
                   Close Inspector
