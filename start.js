@@ -2,7 +2,7 @@
  * start.js — Launcher script for Gita-NeuroSync React (Frontend) + Node.js (Backend)
  */
 
-import { spawn, exec } from 'child_process';
+import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -23,23 +23,12 @@ const backendProcess = spawn('npm', ['run', 'dev'], {
   shell: true,
 });
 
-// Start frontend (Vite React on port 5173 with auto browser open)
+// Start frontend (Vite React on port 5173 with native auto browser open)
 const frontendProcess = spawn('npm', ['run', 'dev', '--', '--open'], {
   cwd: frontendDir,
   stdio: 'inherit',
   shell: true,
 });
-
-// Auto-open browser fallback for Windows
-setTimeout(() => {
-  if (process.platform === 'win32') {
-    exec('start http://localhost:5173');
-  } else if (process.platform === 'darwin') {
-    exec('open http://localhost:5173');
-  } else {
-    exec('xdg-open http://localhost:5173');
-  }
-}, 2000);
 
 // Handle termination
 process.on('SIGINT', () => {
