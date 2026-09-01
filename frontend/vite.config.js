@@ -17,6 +17,7 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    strictPort: true,
     open: true,
     allowedHosts: true,
     cors: true,
@@ -33,6 +34,7 @@ export default defineConfig({
   preview: {
     host: '0.0.0.0',
     port: 5173,
+    strictPort: true,
     allowedHosts: true,
     cors: true,
     proxy: {

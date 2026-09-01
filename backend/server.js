@@ -36,10 +36,18 @@ app.get('/api/health', (req, res) => {
 
 async function start() {
   // 1. Immediately bind and listen on PORT so frontend proxy never receives 502 Bad Gateway
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`\n  ✓ Gita-NeuroSync API running on http://localhost:${PORT}`);
     console.log(`  ✓ Health check: http://localhost:${PORT}/api/health`);
     console.log(`  ✓ Monitoring Supabase Cloud PostgreSQL on startup & reconnect...\n`);
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`\n❌ [PORT ERROR] Port ${PORT} is already in use by another process.`);
+    } else {
+      console.error('Server error:', err);
+    }
   });
 
   // 2. Perform Supabase connection check and table synchronization asynchronously
