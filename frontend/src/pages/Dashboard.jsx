@@ -202,7 +202,7 @@ export default function Dashboard() {
             <CardContent>
               {latestSession ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-                  <div style={{ background: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '14px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ background: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '14px', border: '1px solid var(--border)' }}>
                     <div>
                       <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase' }}>
                         Diagnosed Condition
@@ -211,9 +211,6 @@ export default function Dashboard() {
                         {latestSession.detected_state}
                       </div>
                     </div>
-                    <span className={`state-badge ${getStateClass(latestSession.detected_state)}`} style={{ fontSize: '0.92rem', padding: '0.35rem 0.9rem' }}>
-                      {latestSession.detected_state}
-                    </span>
                   </div>
 
                   <div style={{ fontSize: '0.92rem', color: 'var(--text-secondary)' }}>
