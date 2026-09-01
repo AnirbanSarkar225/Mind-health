@@ -1,110 +1,123 @@
 import pg from 'pg';
-import sqlite3 from 'sqlite3';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
 
 const { Pool } = pg;
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-const isPostgres = Boolean(databaseUrl || process.env.PGHOST);
 
-let pgPool = null;
-let sqliteDb = null;
+if (!databaseUrl) {
+  console.error('[DB FATAL] DATABASE_URL is not defined in backend/.env!');
+}
 
-if (isPostgres) {
+let pool = null;
+let isConnected = false;
+let reconnectTimer = null;
+
+function createPool() {
   const isCloudHost = databaseUrl && !databaseUrl.includes('localhost') && !databaseUrl.includes('127.0.0.1');
   const cleanUrl = databaseUrl ? databaseUrl.replace(/[?&]sslmode=[^&]+/g, '') : databaseUrl;
 
-  pgPool = new Pool({
+  const newPool = new Pool({
     connectionString: cleanUrl,
     ssl: isCloudHost || process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : false,
     max: 20,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10000,
   });
 
-  pgPool.on('error', (err) => {
-    console.error('Unexpected error on idle PostgreSQL client:', err.message);
+  newPool.on('error', (err) => {
+    console.error('[SUPABASE DB ERROR] Unexpected pool client error:', err.message);
+    isConnected = false;
+    scheduleReconnect();
   });
 
-  console.log('[DB OK] Initialized Universal Cloud PostgreSQL connection pool.');
-} else {
-  const dbDir = path.join(__dirname, '..', 'data');
-  if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
-  }
+  newPool.on('connect', () => {
+    isConnected = true;
+  });
 
-  const legacyDbPath = path.join(__dirname, '..', 'gita_neurosync.sqlite');
-  const defaultDbPath = path.join(dbDir, 'gita_neurosync.sqlite');
-  const dbPath = process.env.DATABASE_PATH || defaultDbPath;
+  return newPool;
+}
 
-  if (!fs.existsSync(dbPath) && fs.existsSync(legacyDbPath)) {
+pool = createPool();
+
+function scheduleReconnect() {
+  if (reconnectTimer) return;
+  console.log('[SUPABASE DB] Scheduling automatic Supabase reconnect...');
+  reconnectTimer = setTimeout(async () => {
+    reconnectTimer = null;
     try {
-      fs.copyFileSync(legacyDbPath, dbPath);
+      if (pool) {
+        await pool.end().catch(() => {});
+      }
+      pool = createPool();
+      await checkConnection(3, 2000);
+      console.log('[SUPABASE DB] Successfully re-established Supabase connection.');
     } catch (e) {
-      console.warn('DB migration notice:', e.message);
+      console.warn('[SUPABASE DB] Reconnect attempt failed, will retry:', e.message);
+      scheduleReconnect();
     }
-  }
-
-  sqliteDb = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-      console.error('Failed to connect to SQLite database:', err.message);
-    } else {
-      console.log(`[DB OK] Connected to persistent SQLite database at: ${dbPath}`);
-    }
-  });
-
-  sqliteDb.serialize(() => {
-    sqliteDb.run('PRAGMA journal_mode = WAL;');
-    sqliteDb.run('PRAGMA synchronous = NORMAL;');
-    sqliteDb.run('PRAGMA busy_timeout = 5000;');
-    sqliteDb.run('PRAGMA foreign_keys = ON;');
-  });
+  }, 5000);
 }
 
 /**
- * Universal Query Adapter
- * Supports both PostgreSQL ($1, $2, ...) and SQLite (?) transparently.
+ * Health check & re-monitoring for Supabase
  */
-export function query(text, params = []) {
-  if (isPostgres) {
-    let paramIndex = 1;
-    const pgText = text.replace(/\?/g, () => `$${paramIndex++}`);
-
-    return new Promise((resolve, reject) => {
-      pgPool.query(pgText, params, (err, res) => {
-        if (err) return reject(err);
-        resolve({
-          rows: res?.rows || [],
-          rowCount: res?.rowCount || 0,
-        });
-      });
-    });
-  }
-
-  const sqliteText = text.replace(/\$\d+/g, '?');
-
-  return new Promise((resolve, reject) => {
-    const trimmed = sqliteText.trim().toUpperCase();
-    const isSelect = trimmed.startsWith('SELECT') || trimmed.startsWith('PRAGMA');
-    const isReturning = trimmed.includes('RETURNING');
-
-    if (isSelect || isReturning) {
-      sqliteDb.all(sqliteText, params, (err, rows) => {
-        if (err) return reject(err);
-        resolve({ rows: rows || [], rowCount: (rows || []).length });
-      });
-    } else {
-      sqliteDb.run(sqliteText, params, function (err) {
-        if (err) return reject(err);
-        resolve({ rowCount: this.changes, lastID: this.lastID, rows: [] });
-      });
+export async function checkConnection(maxRetries = 5, delayMs = 2000) {
+  let attempt = 0;
+  while (attempt < maxRetries) {
+    attempt++;
+    try {
+      const client = await pool.connect();
+      const res = await client.query('SELECT NOW() as server_time, current_database() as db');
+      client.release();
+      isConnected = true;
+      console.log(`  ✓ Supabase PostgreSQL Connected: ${res.rows[0].db} (Time: ${res.rows[0].server_time})`);
+      return true;
+    } catch (err) {
+      console.warn(`  [SUPABASE DB] Connection attempt ${attempt}/${maxRetries} failed: ${err.message}`);
+      if (attempt < maxRetries) {
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
     }
-  });
+  }
+  throw new Error(`Failed to connect to Supabase PostgreSQL after ${maxRetries} attempts.`);
 }
 
-export const isPostgresMode = () => isPostgres;
-export default { query, isPostgresMode };
+/**
+ * Universal PostgreSQL Query Adapter
+ * Translates ? placeholders to PostgreSQL $1, $2 and handles transient retries.
+ */
+export async function query(text, params = []) {
+  let paramIndex = 1;
+  const pgText = text.replace(/\?/g, () => `$${paramIndex++}`);
+
+  let retries = 2;
+  while (retries >= 0) {
+    try {
+      const res = await pool.query(pgText, params);
+      return {
+        rows: res?.rows || [],
+        rowCount: res?.rowCount || 0,
+      };
+    } catch (err) {
+      const isConnError =
+        err.code === '57P01' ||
+        err.code === 'ECONNRESET' ||
+        err.code === 'EPIPE' ||
+        err.message?.includes('Connection terminated') ||
+        err.message?.includes('timeout');
+
+      if (isConnError && retries > 0) {
+        console.warn(`[SUPABASE DB] Transient connection error (${err.message}). Retrying query...`);
+        retries--;
+        await new Promise((r) => setTimeout(r, 1000));
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
+export const isPostgresMode = () => true;
+export default { query, checkConnection, isPostgresMode };

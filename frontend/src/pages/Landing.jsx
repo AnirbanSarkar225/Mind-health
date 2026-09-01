@@ -100,9 +100,9 @@ export default function Landing() {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email.trim(), password);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Failed to sign in. Please check your credentials.');
     }
     setLoading(false);
   };
@@ -112,9 +112,9 @@ export default function Landing() {
     setError('');
     setLoading(true);
     try {
-      await register(username, email, password);
+      await register(username.trim(), email.trim(), password);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Failed to create account.');
     }
     setLoading(false);
   };
@@ -558,12 +558,28 @@ export default function Landing() {
         {authTab === 'login' ? (
           <form onSubmit={handleLogin}>
             <div className="form-group">
-              <label>Email</label>
-              <input className="form-control" type="email" placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <label>Email or Username</label>
+              <input
+                className="form-control"
+                type="text"
+                placeholder="name@example.com or username"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoCapitalize="none"
+                autoCorrect="off"
+                required
+              />
             </div>
             <div className="form-group">
               <label>Password</label>
-              <input className="form-control" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <input
+                className="form-control"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
             </div>
             <button className="btn btn-primary btn-block" type="submit" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign In'}

@@ -106,7 +106,7 @@ async function runTestSuite() {
   // ──────────────────────────────────────────────────────────────────────────
   // TEST SUITE 3: Database & Security Architecture
   // ──────────────────────────────────────────────────────────────────────────
-  header('TEST SUITE 3: SQLite Database & JWT Security');
+  header('TEST SUITE 3: Supabase Cloud Database & JWT Security');
 
   // 3.1 DDL Execution
   await createTables();

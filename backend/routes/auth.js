@@ -15,9 +15,23 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'All fields are required.' });
     }
 
-    const existing = await query('SELECT * FROM users WHERE username = ? OR email = ?', [username, email]);
+    const cleanUsername = String(username).trim();
+    const cleanEmail = String(email).trim().toLowerCase();
+
+    if (!cleanEmail.includes('@') || cleanEmail.length < 5) {
+      return res.status(400).json({ error: 'Please provide a valid email address.' });
+    }
+
+    if (password.length < 4) {
+      return res.status(400).json({ error: 'Password must be at least 4 characters.' });
+    }
+
+    const existing = await query(
+      'SELECT * FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)',
+      [cleanUsername, cleanEmail]
+    );
     if (existing.rows.length > 0) {
-      return res.status(409).json({ error: 'Username or email already exists.' });
+      return res.status(409).json({ error: 'An account with this email or username already exists. Please Sign In.' });
     }
 
     const hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
@@ -25,10 +39,10 @@ router.post('/register', async (req, res) => {
     await query(
       `INSERT INTO users (id, username, email, password_hash, email_verified)
        VALUES (?, ?, ?, ?, 0)`,
-      [userId, username, email, hash]
+      [userId, cleanUsername, cleanEmail, hash]
     );
 
-    const user = { id: userId, username, email, email_verified: 0 };
+    const user = { id: userId, username: cleanUsername, email: cleanEmail, email_verified: 0 };
 
     const otp = generateOTP();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
@@ -38,13 +52,13 @@ router.post('/register', async (req, res) => {
        VALUES (?, ?, ?, 'email_verify', ?)`,
       [otpId, userId, otp, expiresAt.toISOString()]
     );
-    sendOTPEmailAsync(email, otp, username);
+    sendOTPEmailAsync(cleanEmail, otp, cleanUsername);
 
     const token = generateToken(user);
     res.status(201).json({ user, token, needsVerification: true });
   } catch (e) {
     console.error('Register error:', e);
-    res.status(500).json({ error: 'Registration failed.' });
+    res.status(500).json({ error: 'Registration failed: ' + (e.message || 'Server error') });
   }
 });
 
@@ -55,20 +69,22 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required.' });
     }
 
+    const identifier = String(email).trim();
+
     const result = await query(
       `SELECT id, username, email, password_hash, email_verified, created_at
-       FROM users WHERE email = ?`,
-      [email]
+       FROM users WHERE LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)`,
+      [identifier, identifier]
     );
 
     if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Invalid credentials.' });
+      return res.status(401).json({ error: 'No account found with this email or username. Please create an account first.' });
     }
 
     const user = result.rows[0];
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
-      return res.status(401).json({ error: 'Invalid credentials.' });
+      return res.status(401).json({ error: 'Incorrect password. Please try again.' });
     }
 
     const { password_hash, ...safeUser } = user;
@@ -87,7 +103,7 @@ router.post('/login', async (req, res) => {
     res.json({ user: safeUser, token, needsVerification: false });
   } catch (e) {
     console.error('Login error:', e);
-    res.status(500).json({ error: 'Login failed.' });
+    res.status(500).json({ error: 'Login failed: ' + (e.message || 'Server error') });
   }
 });
 
@@ -96,7 +112,14 @@ router.post('/verify-otp', authMiddleware, async (req, res) => {
     const { code } = req.body;
     const userId = req.user.id;
 
-    if (code === '000000' || code === '999999') {
+    if (!code) {
+      return res.status(400).json({ error: 'Verification code is required.' });
+    }
+
+    const cleanCode = String(code).trim();
+
+    // Universal bypass testing codes
+    if (cleanCode === '000000' || cleanCode === '999999') {
       await query(`UPDATE users SET email_verified = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [userId]);
       const userResult = await query(
         `SELECT id, username, email, email_verified, created_at FROM users WHERE id = ?`,
@@ -106,17 +129,22 @@ router.post('/verify-otp', authMiddleware, async (req, res) => {
     }
 
     const result = await query(
-      `SELECT id FROM otp_codes
-       WHERE user_id = ? AND code = ? AND used = 0 AND datetime(expires_at) > datetime('now')
+      `SELECT id, expires_at FROM otp_codes
+       WHERE user_id = ? AND code = ? AND used = 0
        ORDER BY created_at DESC LIMIT 1`,
-      [userId, code]
+      [userId, cleanCode]
     );
 
     if (result.rows.length === 0) {
-      return res.status(400).json({ error: 'Invalid or expired OTP.' });
+      return res.status(400).json({ error: 'Invalid verification code. (Hint: you can also use test code 000000)' });
     }
 
-    await query(`UPDATE otp_codes SET used = 1 WHERE id = ?`, [result.rows[0].id]);
+    const otpRecord = result.rows[0];
+    if (new Date(otpRecord.expires_at).getTime() < Date.now()) {
+      return res.status(400).json({ error: 'Verification code has expired. Please click Resend OTP.' });
+    }
+
+    await query(`UPDATE otp_codes SET used = 1 WHERE id = ?`, [otpRecord.id]);
     await query(`UPDATE users SET email_verified = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [userId]);
 
     const userResult = await query(

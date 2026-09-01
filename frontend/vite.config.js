@@ -4,6 +4,7 @@ import path from "path"
 import { fileURLToPath } from "url"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const backendTarget = process.env.VITE_BACKEND_URL || 'http://localhost:5000'
 
 export default defineConfig({
   plugins: [react()],
@@ -17,13 +18,25 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     open: true,
-
     allowedHosts: ['churn-retiring-county.ngrok-free.dev'],
-
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: backendTarget,
         changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
+
+  preview: {
+    host: '0.0.0.0',
+    port: 5173,
+    allowedHosts: ['churn-retiring-county.ngrok-free.dev'],
+    proxy: {
+      '/api': {
+        target: backendTarget,
+        changeOrigin: true,
+        secure: false,
       },
     },
   },
