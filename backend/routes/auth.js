@@ -18,6 +18,10 @@ router.post('/register', async (req, res) => {
     const cleanUsername = String(username).trim();
     const cleanEmail = String(email).trim().toLowerCase();
 
+    if (cleanUsername.length < 2) {
+      return res.status(400).json({ error: 'Name must be at least 2 characters.' });
+    }
+
     if (!cleanEmail.includes('@') || cleanEmail.length < 5) {
       return res.status(400).json({ error: 'Please provide a valid email address.' });
     }
@@ -58,7 +62,13 @@ router.post('/register', async (req, res) => {
     res.status(201).json({ user, token, needsVerification: true });
   } catch (e) {
     console.error('Register error:', e);
-    res.status(500).json({ error: 'Registration failed: ' + (e.message || 'Server error') });
+    if (e.code === '23505') {
+      return res.status(409).json({ error: 'An account with this email or username already exists. Please Sign In.' });
+    }
+    if (e.code === '42P01' || e.code === '57P01' || e.code === 'ECONNRESET' || e.code === 'EPIPE') {
+      return res.status(503).json({ error: 'Registration is temporarily unavailable. Please try again in a moment.' });
+    }
+    res.status(500).json({ error: 'Registration failed. Please try again.' });
   }
 });
 
@@ -103,7 +113,10 @@ router.post('/login', async (req, res) => {
     res.json({ user: safeUser, token, needsVerification: false });
   } catch (e) {
     console.error('Login error:', e);
-    res.status(500).json({ error: 'Login failed: ' + (e.message || 'Server error') });
+    if (e.code === '42P01' || e.code === '57P01' || e.code === 'ECONNRESET' || e.code === 'EPIPE') {
+      return res.status(503).json({ error: 'Sign in is temporarily unavailable. Please try again in a moment.' });
+    }
+    res.status(500).json({ error: 'Login failed. Please try again.' });
   }
 });
 
