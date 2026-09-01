@@ -8,7 +8,6 @@ const __dirname = path.dirname(__filename);
 const testProc = spawn('node', ['test_suite.js'], {
   cwd: path.join(__dirname, 'backend'),
   stdio: 'inherit',
-  shell: true,
 });
 
 testProc.on('close', (code) => {

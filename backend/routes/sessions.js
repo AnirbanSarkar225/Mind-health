@@ -110,7 +110,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
         avgConfidence,
         mostFrequentState,
         dynamicAccuracy: getDynamicAccuracy(),
-        totalFeedback: feedbackRes.rows[0].count,
+        totalFeedback: parseInt(feedbackRes.rows[0]?.count || '0'),
       }
     });
   } catch (e) {

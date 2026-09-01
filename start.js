@@ -13,10 +13,11 @@ console.log(' Starting Gita-NeuroSync Services...');
 console.log(' Connecting to Supabase Cloud PostgreSQL');
 console.log('========================================\n');
 
-const backendProcess = spawn('npm', ['run', 'dev'], {
+const isWin = process.platform === 'win32';
+
+const backendProcess = spawn('node', ['server.js'], {
   cwd: backendDir,
   stdio: 'inherit',
-  shell: true,
 });
 
 backendProcess.on('error', (err) => {
@@ -29,10 +30,10 @@ backendProcess.on('exit', (code) => {
   }
 });
 
-const frontendProcess = spawn('npm', ['run', 'dev'], {
+const npxCmd = isWin ? 'npx.cmd' : 'npx';
+const frontendProcess = spawn(npxCmd, ['vite', '--host'], {
   cwd: frontendDir,
   stdio: 'inherit',
-  shell: true,
 });
 
 frontendProcess.on('error', (err) => {
