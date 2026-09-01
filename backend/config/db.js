@@ -1,4 +1,13 @@
 import pg from 'pg';
+<<<<<<< HEAD
+=======
+import dns from 'dns';
+
+// Ensure IPv4 first on Windows to avoid IPv6 Supabase connection timeout
+if (typeof dns.setDefaultResultOrder === 'function') {
+  dns.setDefaultResultOrder('ipv4first');
+}
+>>>>>>> origin/main
 
 const { Pool } = pg;
 
@@ -21,7 +30,11 @@ function createPool() {
     ssl: isCloudHost || process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : false,
     max: 20,
     idleTimeoutMillis: 30000,
+<<<<<<< HEAD
     connectionTimeoutMillis: 10000,
+=======
+    connectionTimeoutMillis: 15000,
+>>>>>>> origin/main
     keepAlive: true,
     keepAliveInitialDelayMillis: 10000,
   });

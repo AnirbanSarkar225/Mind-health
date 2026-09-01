@@ -30,12 +30,26 @@ app.get('/api/health', (req, res) => {
 });
 
 async function start() {
+<<<<<<< HEAD
   try {
     console.log('\n  [INFO] Checking and monitoring Supabase PostgreSQL connection...');
+=======
+  // 1. Immediately bind and listen on PORT so frontend proxy never receives 502 Bad Gateway
+  app.listen(PORT, () => {
+    console.log(`\n  ✓ Gita-NeuroSync API running on http://localhost:${PORT}`);
+    console.log(`  ✓ Health check: http://localhost:${PORT}/api/health`);
+    console.log(`  ✓ Monitoring Supabase Cloud PostgreSQL on startup & reconnect...\n`);
+  });
+
+  // 2. Perform Supabase connection check and table synchronization asynchronously
+  try {
+    console.log('  [INFO] Checking and monitoring Supabase PostgreSQL connection...');
+>>>>>>> origin/main
     await checkConnection(5, 2000);
 
     console.log('  [INFO] Synchronizing Supabase database tables & RLS security policies...');
     await createTables();
+<<<<<<< HEAD
 
     app.listen(PORT, () => {
       console.log(`\n  ✓ Gita-NeuroSync API running on http://localhost:${PORT}`);
@@ -45,6 +59,12 @@ async function start() {
   } catch (e) {
     console.error('  [FAIL] Server startup failed:', e.message);
     process.exit(1);
+=======
+    console.log('  ✓ Supabase Cloud PostgreSQL Schema & RLS Synchronized.\n');
+  } catch (e) {
+    console.warn('  [WARN] Initial Supabase connection notice:', e.message);
+    console.log('  [INFO] Background reconnect monitor is active and will retry connection.\n');
+>>>>>>> origin/main
   }
 }
 
