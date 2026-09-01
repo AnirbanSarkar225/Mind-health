@@ -1,14 +1,8 @@
-/**
- * ==============================================================================
- *  GITA-NEUROSYNC — COMPREHENSIVE AUTOMATED TEST SUITE
- *  Run: node backend/test_suite.js (or npm test)
- * ==============================================================================
- */
-
+import 'dotenv/config';
 import { classifyRuleBased, classifyML, classify, onlineUpdate, computeScores } from './models/classifier.js';
 import { MentalState, STATE_LABELS } from './models/states.js';
 import { GITA_VERSES } from './models/verses.js';
-import { query } from './config/db.js';
+import { query, isPostgresMode } from './config/db.js';
 import { createTables } from './services/schema.js';
 import { generateToken, verifyToken } from './middleware/auth.js';
 import bcrypt from 'bcrypt';

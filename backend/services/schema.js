@@ -7,8 +7,8 @@ CREATE TABLE IF NOT EXISTS users (
     email           TEXT UNIQUE NOT NULL,
     password_hash   TEXT NOT NULL,
     email_verified  INTEGER DEFAULT 0,
-    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS otp_codes (
@@ -16,9 +16,9 @@ CREATE TABLE IF NOT EXISTS otp_codes (
     user_id         TEXT NOT NULL,
     code            TEXT NOT NULL,
     purpose         TEXT DEFAULT 'email_verify',
-    expires_at      DATETIME NOT NULL,
+    expires_at      TIMESTAMPTZ NOT NULL,
     used            INTEGER DEFAULT 0,
-    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     detected_state      TEXT NOT NULL,
     classifier_method   TEXT NOT NULL,
     confidence          REAL NOT NULL,
-    created_at          DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS problems (
     description         TEXT,
     symptoms            TEXT,
     discomfort_level    INTEGER NOT NULL CHECK (discomfort_level BETWEEN 1 AND 5),
-    created_at          DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(session_id) REFERENCES sessions(id) ON DELETE CASCADE,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS feedback (
     confirmed_state     TEXT NOT NULL,
     discomfort_level    INTEGER NOT NULL CHECK (discomfort_level BETWEEN 1 AND 5),
     notes               TEXT,
-    created_at          DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(session_id) REFERENCES sessions(id) ON DELETE CASCADE,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
