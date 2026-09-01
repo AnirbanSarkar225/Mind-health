@@ -61,15 +61,13 @@ async function request(path, options = {}) {
       data?.error ||
       data?.message ||
       (res.status === 404
-        ? `API endpoint '${path}' not found (404). Please ensure the backend server is running.`
-        : res.status === 502 || res.status === 503 || res.status === 504
-        ? `Backend service temporarily unavailable (${res.status}). Please check backend status.`
-        : `Request failed with status ${res.status}`);
+        ? 'Service endpoint not found.'
+        : `Connection error (${res.status}). Please try again.`);
     throw new Error(errorMsg);
   }
 
   if (data === null) {
-    throw new Error('Received non-JSON response from server. Please verify backend status.');
+    throw new Error('Server returned an invalid response. Please try again.');
   }
 
   return data;

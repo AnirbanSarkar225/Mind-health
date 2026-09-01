@@ -1,4 +1,4 @@
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -13,10 +13,17 @@ console.log(' Starting Gita-NeuroSync Services...');
 console.log(' Connecting to Supabase Cloud PostgreSQL');
 console.log('========================================\n');
 
-const backendProcess = spawn('npm', ['run', 'dev'], {
+// Clean up any stale processes from previous runs on ports 5000 and 5173
+if (process.platform === 'win32') {
+  try {
+    execSync('powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort 5000,5173 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }"', { stdio: 'ignore' });
+  } catch {}
+}
+
+// Backend: run server.js directly with node
+const backendProcess = spawn('node', ['server.js'], {
   cwd: backendDir,
   stdio: 'inherit',
-  shell: true,
 });
 
 backendProcess.on('error', (err) => {
@@ -29,10 +36,11 @@ backendProcess.on('exit', (code) => {
   }
 });
 
-const frontendProcess = spawn('npm', ['run', 'dev'], {
+// Frontend: run vite's JS entry point directly with node (cross-platform, no shell needed)
+const viteEntry = path.join(frontendDir, 'node_modules', 'vite', 'bin', 'vite.js');
+const frontendProcess = spawn('node', [viteEntry, '--host'], {
   cwd: frontendDir,
   stdio: 'inherit',
-  shell: true,
 });
 
 frontendProcess.on('error', (err) => {

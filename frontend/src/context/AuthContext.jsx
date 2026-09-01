@@ -45,7 +45,8 @@ export function AuthProvider({ children }) {
 
   const verifyOTP = useCallback(async (code) => {
     const data = await api.verifyOTP(code);
-    setUser(data.user);
+    clearToken();
+    setUser(null);
     setNeedsVerification(false);
     return data;
   }, []);

@@ -53,6 +53,7 @@ export default function Landing() {
   const { login, register, verifyOTP, needsVerification, user } = useAuth();
   const [authTab, setAuthTab] = useState('login');
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState(0);
 
@@ -126,8 +127,10 @@ export default function Landing() {
     setLoading(true);
     try {
       await verifyOTP(otpCode);
+      setAuthTab('login');
+      setSuccessMsg('✓ Account created and email verified! Please sign in with your credentials.');
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Verification failed.');
     }
     setLoading(false);
   };
@@ -171,8 +174,10 @@ export default function Landing() {
                 setLoading(true);
                 try {
                   await verifyOTP(val);
+                  setAuthTab('login');
+                  setSuccessMsg('✓ Account created and email verified! Please sign in with your credentials.');
                 } catch (err) {
-                  setError(err.message);
+                  setError(err.message || 'Verification failed.');
                 }
                 setLoading(false);
               }}
@@ -549,11 +554,26 @@ export default function Landing() {
         variants={fadeIn}
       >
         <div className="auth-tabs">
-          <button className={`auth-tab ${authTab === 'login' ? 'active' : ''}`} onClick={() => { setAuthTab('login'); setError(''); }}>Sign In</button>
-          <button className={`auth-tab ${authTab === 'register' ? 'active' : ''}`} onClick={() => { setAuthTab('register'); setError(''); }}>Create Account</button>
+          <button className={`auth-tab ${authTab === 'login' ? 'active' : ''}`} onClick={() => { setAuthTab('login'); setError(''); setSuccessMsg(''); }}>Sign In</button>
+          <button className={`auth-tab ${authTab === 'register' ? 'active' : ''}`} onClick={() => { setAuthTab('register'); setError(''); setSuccessMsg(''); }}>Create Account</button>
         </div>
 
         {error && <div className="form-error">{error}</div>}
+        {successMsg && (
+          <div className="form-success" style={{
+            background: 'rgba(16, 185, 129, 0.1)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            color: '#065F46',
+            padding: '0.85rem 1.1rem',
+            borderRadius: 'var(--radius-md)',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            marginBottom: '1.25rem',
+            textAlign: 'center',
+          }}>
+            {successMsg}
+          </div>
+        )}
 
         {authTab === 'login' ? (
           <form onSubmit={handleLogin}>
