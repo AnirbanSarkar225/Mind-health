@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLINICC - Medical Consultation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="logo">
+                <i class="fa-solid fa-notes-medical" style="color: #4C72FF;"></i>
+                <span>CLINICC</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#" class="active">Home</a></li>
+                <li><a href="#">Doctors</a></li>
+                <li><a href="#">Consultation</a></li>
+                <li><a href="#">About us</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+            <div class="auth-buttons">
+                <button class="btn btn-dark">Login</button>
+                <button class="btn btn-outline">Sign Up <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <div class="badge">
+                    <i class="fa-solid fa-circle-check"></i> Consult with real doctors
+                </div>
+                <h1>Your health is<br>our priority</h1>
+                <p>We provide the best medical services with top-tier healthcare professionals. Dedicated to keeping you and your loved ones healthy and happy.</p>
+                <div class="hero-actions">
+                    <button class="btn btn-primary">Book Appointment</button>
+                    <a href="#" class="social-link"><i class="fa-brands fa-whatsapp"></i> @clinicccare</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="blob-bg"></div>
+                <img src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=2070&auto=format&fit=crop" alt="Doctor" class="doctor-img">
+                <div class="floating-badge top-right">
+                    <span>Cardiology</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Section -->
+        <section class="stats-section">
+            <div class="stats-text">
+                <h3>Doctor <span class="highlight"><i class="fa-solid fa-star-of-life"></i></span></h3>
+                <h2>Medical consultation<br>and Premium care</h2>
+                <p>We provide world-class medical assistance with our expert team of doctors. Providing personalized care utilizing advanced medical technology.</p>
+                <div class="progress-container">
+                    <div class="progress-label">
+                        <span class="dot"></span> Medical Score 4.9/5
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill"></div></div>
+                </div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="icon-circle"><i class="fa-solid fa-user-doctor"></i></div>
+                    <h4>Experienced Doctors</h4>
+                    <p>120+ Specialists</p>
+                </div>
+                <div class="stat-card">
+                    <div class="icon-circle"><i class="fa-solid fa-bed-pulse"></i></div>
+                    <h4>Patient Recovery</h4>
+                    <p>98% Success Rate</p>
+                </div>
+                <div class="stat-card">
+                    <div class="icon-circle"><i class="fa-solid fa-truck-medical"></i></div>
+                    <h4>Emergency Service</h4>
+                    <p>24/7 Available</p>
+                </div>
+                <div class="stat-card">
+                    <div class="icon-circle"><i class="fa-solid fa-hand-holding-medical"></i></div>
+                    <h4>Trusted Care</h4>
+                    <p>15k+ Happy Patients</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Doctors List Section -->
+        <section class="doctors-list">
+            <!-- Doctor 1 -->
+            <div class="doctor-mini-card">
+                <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=150&auto=format&fit=crop" alt="Dr. Robert">
+                <div class="doc-info">
+                    <h5>Dr. Robert Fox</h5>
+                    <span>General Practitioner</span>
+                </div>
+                <div class="status-badge available">Available</div>
+            </div>
+            <!-- Doctor 2 -->
+            <div class="doctor-mini-card">
+                <img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=150&auto=format&fit=crop" alt="Dr. Jane">
+                <div class="doc-info">
+                    <h5>Dr. Jane Cooper</h5>
+                    <span>Pediatrician</span>
+                </div>
+                <div class="status-badge available">Available</div>
+            </div>
+            <!-- Doctor 3 -->
+            <div class="doctor-mini-card">
+                <img src="https://images.unsplash.com/photo-1537368910025-7028a411a58c?q=80&w=150&auto=format&fit=crop" alt="Dr. Mark">
+                <div class="doc-info">
+                    <h5>Dr. Mark Stone</h5>
+                    <span>Neurologist</span>
+                </div>
+                <div class="status-badge busy">Busy</div>
+            </div>
+            <!-- Doctor 4 -->
+            <div class="doctor-mini-card">
+                <img src="https://images.unsplash.com/photo-1594824432258-0027f6772714?q=80&w=150&auto=format&fit=crop" alt="Dr. Sarah">
+                <div class="doc-info">
+                    <h5>Dr. Sarah Lee</h5>
+                    <span>Cardiologist</span>
+                </div>
+                <div class="status-badge busy">Busy</div>
+            </div>
+        </section>
+
+        <!-- Bottom Section -->
+        <section class="bottom-section">
+            <div class="bottom-cards">
+                <div class="info-card purple-bg">
+                    <h3>Premium healthcare tailored to you</h3>
+                    <p>Experience the highest level of medical care with our personalized approach, focusing on your long-term well-being and health goals.</p>
+                </div>
+                <div class="image-card">
+                    <img src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=2080&auto=format&fit=crop" alt="Medical Team">
+                    <div class="card-overlay">
+                        <div class="play-btn"><i class="fa-solid fa-play"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="appointment-form-container">
+                <h3>Appointment process</h3>
+                <div class="process-steps">
+                    <div class="step active"><i class="fa-solid fa-stethoscope"></i></div>
+                    <div class="step-line"></div>
+                    <div class="step"><i class="fa-solid fa-calendar-check"></i></div>
+                    <div class="step-line"></div>
+                    <div class="step"><i class="fa-solid fa-user-doctor"></i></div>
+                    <div class="step-line"></div>
+                    <div class="step"><i class="fa-solid fa-notes-medical"></i></div>
+                    <div class="step-line"></div>
+                    <div class="step"><i class="fa-solid fa-heart-pulse"></i></div>
+                </div>
+                <form class="appointment-form" onsubmit="event.preventDefault();">
+                    <div class="form-group">
+                        <select class="form-control">
+                            <option>Department (e.g. Cardiology)</option>
+                            <option>Neurology</option>
+                            <option>Pediatrics</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <select class="form-control">
+                            <option>Select Doctor</option>
+                            <option>Dr. Sarah Lee</option>
+                            <option>Dr. Robert Fox</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <select class="form-control">
+                            <option>Select Date & Time</option>
+                            <option>Today - 10:00 AM</option>
+                            <option>Tomorrow - 02:30 PM</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary btn-block">Get Appointment</button>
+                </form>
+            </div>
+        </section>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

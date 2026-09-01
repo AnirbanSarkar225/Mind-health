@@ -1,0 +1,36 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Agent / IDE Tooling Metadata
+.agents/
+.claude/
+.gemini/
+.idea/
+.vscode/
+
+# Streamlit Local Cache
+.streamlit/secrets.toml
+
+node_modules/
+pgsql/
+dist/
+build/
+.env
+pg.zip
+pg_data/
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite-journal
+backend/data/*.sqlite*
+data/*.sqlite*
