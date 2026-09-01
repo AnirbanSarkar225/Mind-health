@@ -11,6 +11,7 @@ import classifyRoutes from './routes/classify.js';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '5000');
+let databaseReady = false;
 
 app.use(cors({
   origin: true,
@@ -20,6 +21,17 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '5mb' }));
 
+app.use('/api', (req, res, next) => {
+  if (req.path === '/health' || databaseReady) {
+    return next();
+  }
+
+  return res.status(503).json({
+    error: 'Database is still initializing. Please try again in a moment.',
+    code: 'DATABASE_NOT_READY',
+  });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/feedback', feedbackRoutes);
@@ -27,10 +39,11 @@ app.use('/api/classify', classifyRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({
-    status: 'ok',
+    status: databaseReady ? 'ok' : 'starting',
     version: '4.0.0',
     engine: 'Node.js/Express',
     database: 'Supabase PostgreSQL Cloud',
+    databaseReady,
   });
 });
 
@@ -57,6 +70,7 @@ async function start() {
 
     console.log('  [INFO] Synchronizing Supabase database tables & RLS security policies...');
     await createTables();
+    databaseReady = true;
     console.log('  ✓ Supabase Cloud PostgreSQL Schema & RLS Synchronized.\n');
   } catch (e) {
     console.warn('  [WARN] Initial Supabase connection notice:', e.message);
