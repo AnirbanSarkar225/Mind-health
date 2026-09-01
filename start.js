@@ -13,8 +13,7 @@ console.log(' Starting Gita-NeuroSync Services...');
 console.log(' Connecting to Supabase Cloud PostgreSQL');
 console.log('========================================\n');
 
-const isWin = process.platform === 'win32';
-
+// Backend: run server.js directly with node
 const backendProcess = spawn('node', ['server.js'], {
   cwd: backendDir,
   stdio: 'inherit',
@@ -30,8 +29,9 @@ backendProcess.on('exit', (code) => {
   }
 });
 
-const npxCmd = isWin ? 'npx.cmd' : 'npx';
-const frontendProcess = spawn(npxCmd, ['vite', '--host'], {
+// Frontend: run vite's JS entry point directly with node (cross-platform, no shell needed)
+const viteEntry = path.join(frontendDir, 'node_modules', 'vite', 'bin', 'vite.js');
+const frontendProcess = spawn('node', [viteEntry, '--host'], {
   cwd: frontendDir,
   stdio: 'inherit',
 });
