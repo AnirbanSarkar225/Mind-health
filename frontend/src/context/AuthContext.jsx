@@ -45,8 +45,11 @@ export function AuthProvider({ children }) {
 
   const verifyOTP = useCallback(async (code) => {
     const data = await api.verifyOTP(code);
-    clearToken();
-    setUser(null);
+    if (data.user) {
+      setUser(data.user);
+    } else {
+      setUser((prev) => (prev ? { ...prev, email_verified: 1 } : null));
+    }
     setNeedsVerification(false);
     return data;
   }, []);
@@ -57,7 +60,7 @@ export function AuthProvider({ children }) {
     setNeedsVerification(false);
   }, []);
 
-  const isAuthenticated = !!user && !needsVerification && user.email_verified;
+  const isAuthenticated = !!user && !needsVerification && Boolean(user.email_verified);
 
   return (
     <AuthContext.Provider

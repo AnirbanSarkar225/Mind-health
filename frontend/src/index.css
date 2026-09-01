@@ -98,8 +98,22 @@ img {
   display: block;
 }
 
+/* ── Screen Reader Utility ───────────────────────────────── */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border-width: 0 !important;
+}
+
 /* ── Typography ──────────────────────────────────────────── */
 h1 { font-size: 3.2rem; font-weight: 800; line-height: 1.15; letter-spacing: -0.03em; color: var(--text-dark); }
+
 h2 { font-size: 2.3rem; font-weight: 800; line-height: 1.25; letter-spacing: -0.02em; color: var(--text-dark); }
 h3 { font-size: 1.6rem; font-weight: 700; color: var(--text-dark); }
 h4 { font-size: 1.3rem; font-weight: 700; color: var(--text-dark); }
