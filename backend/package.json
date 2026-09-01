@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch-path=server.js --watch-path=routes --watch-path=models --watch-path=middleware --watch-path=services --watch-path=config server.js"
+    "dev": "node --watch server.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
