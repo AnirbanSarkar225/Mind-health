@@ -8,12 +8,25 @@ const __dirname = path.dirname(__filename);
 const backendDir = path.join(__dirname, 'backend');
 const frontendDir = path.join(__dirname, 'frontend');
 
-console.log('Starting Gita-NeuroSync services...\n');
+console.log('\n========================================');
+console.log(' Starting Gita-NeuroSync Services...');
+console.log(' Connecting to Supabase Cloud PostgreSQL');
+console.log('========================================\n');
 
 const backendProcess = spawn('npm', ['run', 'dev'], {
   cwd: backendDir,
   stdio: 'inherit',
   shell: true,
+});
+
+backendProcess.on('error', (err) => {
+  console.error('[BACKEND ERROR] Failed to start backend process:', err.message);
+});
+
+backendProcess.on('exit', (code) => {
+  if (code && code !== 0) {
+    console.error(`[BACKEND EXIT] Backend process exited with code ${code}`);
+  }
 });
 
 const frontendProcess = spawn('npm', ['run', 'dev'], {
@@ -22,9 +35,19 @@ const frontendProcess = spawn('npm', ['run', 'dev'], {
   shell: true,
 });
 
+frontendProcess.on('error', (err) => {
+  console.error('[FRONTEND ERROR] Failed to start frontend process:', err.message);
+});
+
+frontendProcess.on('exit', (code) => {
+  if (code && code !== 0) {
+    console.error(`[FRONTEND EXIT] Frontend process exited with code ${code}`);
+  }
+});
+
 process.on('SIGINT', () => {
   console.log('\nShutting down Gita-NeuroSync services...');
-  backendProcess.kill('SIGINT');
-  frontendProcess.kill('SIGINT');
+  try { backendProcess.kill('SIGINT'); } catch {}
+  try { frontendProcess.kill('SIGINT'); } catch {}
   process.exit();
 });

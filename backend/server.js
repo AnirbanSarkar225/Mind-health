@@ -12,7 +12,12 @@ import classifyRoutes from './routes/classify.js';
 const app = express();
 const PORT = parseInt(process.env.PORT || '5000');
 
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'x-requested-with', 'Accept'],
+}));
 app.use(express.json({ limit: '5mb' }));
 
 app.use('/api/auth', authRoutes);

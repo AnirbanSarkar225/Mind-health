@@ -18,12 +18,14 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     open: true,
-    allowedHosts: ['churn-retiring-county.ngrok-free.dev'],
+    allowedHosts: true,
+    cors: true,
     proxy: {
       '/api': {
         target: backendTarget,
         changeOrigin: true,
         secure: false,
+        ws: true,
       },
     },
   },
@@ -31,12 +33,14 @@ export default defineConfig({
   preview: {
     host: '0.0.0.0',
     port: 5173,
-    allowedHosts: ['churn-retiring-county.ngrok-free.dev'],
+    allowedHosts: true,
+    cors: true,
     proxy: {
       '/api': {
         target: backendTarget,
         changeOrigin: true,
         secure: false,
+        ws: true,
       },
     },
   },
