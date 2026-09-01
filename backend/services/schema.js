@@ -1,4 +1,4 @@
-import { query } from '../config/db.js';
+import { query, isPostgresMode } from '../config/db.js';
 
 const TABLES_SQL = `
 CREATE TABLE IF NOT EXISTS users (
@@ -104,6 +104,11 @@ export async function createTables() {
         console.warn(`[SCHEMA NOTICE] Table statement warning: ${err.message}`);
       }
     }
+  }
+
+  if (!isPostgresMode()) {
+    console.log('  ✓ SQLite Database Schema Synchronized.');
+    return;
   }
 
   // Apply RLS and security policies to eliminate Supabase Security Advisor warnings
