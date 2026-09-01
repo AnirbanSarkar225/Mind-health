@@ -1,0 +1,155 @@
+/* ============================================================
+   GITA-NEUROSYNC — SCROLL GLOBE 3D BACKGROUND SYSTEM
+   ============================================================ */
+
+.scroll-globe-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ── Top Scroll Progress Bar ─────────────────────────────── */
+.scroll-progress-track {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: rgba(76, 114, 255, 0.08);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.scroll-progress-indicator {
+  height: 100%;
+  background: linear-gradient(90deg, #4C72FF 0%, #34D399 50%, #8FDCC4 100%);
+  transform-origin: left center;
+  transition: transform 0.1s ease-out;
+  box-shadow: 0 0 8px rgba(76, 114, 255, 0.4);
+  will-change: transform;
+}
+
+/* ── Contained 3D Globe Ambient Background ───────────────── */
+.scroll-globe-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.scroll-globe-mover {
+  position: sticky;
+  top: 15vh;
+  left: 0;
+  width: 520px;
+  height: 520px;
+  margin-left: auto;
+  margin-right: auto;
+  pointer-events: auto;
+  will-change: transform, opacity;
+  transition: transform 1.2s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.8s ease;
+}
+
+/* ── Floating Section Nav Dots ───────────────────────────── */
+.scroll-section-nav {
+  position: fixed;
+  right: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  align-items: center;
+}
+
+.scroll-section-nav-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(180deg, transparent 0%, rgba(76, 114, 255, 0.25) 50%, transparent 100%);
+  transform: translateX(-50%);
+  z-index: -1;
+}
+
+.scroll-section-nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.scroll-section-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid rgba(107, 114, 128, 0.35);
+  background: var(--bg-white, #ffffff);
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.scroll-section-dot:hover {
+  border-color: var(--primary, #4C72FF);
+  background: var(--primary-light, #EAF1FF);
+  transform: scale(1.3);
+}
+
+.scroll-section-dot.active {
+  background: var(--primary, #4C72FF);
+  border-color: var(--primary, #4C72FF);
+  box-shadow: 0 0 10px rgba(76, 114, 255, 0.5);
+  transform: scale(1.35);
+}
+
+/* ── Nav Dot Tooltip Badge ───────────────────────────────── */
+.scroll-section-badge {
+  position: absolute;
+  right: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0.3rem 0.7rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border, #E5E7EB);
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-primary, #172033);
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  pointer-events: none;
+  opacity: 0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scroll-section-nav-item:hover .scroll-section-badge {
+  opacity: 1;
+}
+
+/* ── Page Content Layer ──────────────────────────────────── */
+.scroll-globe-content-layer {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .scroll-section-nav {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .scroll-globe-mover {
+    opacity: 0.35 !important;
+  }
+}
