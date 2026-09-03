@@ -27,6 +27,19 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         ws: true,
+        configure: (proxy) => {
+          proxy.on('error', (err, _req, res) => {
+            if (err.code === 'ECONNREFUSED') {
+              if (res && typeof res.writeHead === 'function' && !res.headersSent) {
+                res.writeHead(503, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                  error: 'Backend API server is starting up. Please retry in a moment.',
+                  code: 'BACKEND_STARTING',
+                }));
+              }
+            }
+          });
+        },
       },
     },
   },
@@ -43,6 +56,19 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         ws: true,
+        configure: (proxy) => {
+          proxy.on('error', (err, _req, res) => {
+            if (err.code === 'ECONNREFUSED') {
+              if (res && typeof res.writeHead === 'function' && !res.headersSent) {
+                res.writeHead(503, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                  error: 'Backend API server is starting up. Please retry in a moment.',
+                  code: 'BACKEND_STARTING',
+                }));
+              }
+            }
+          });
+        },
       },
     },
   },

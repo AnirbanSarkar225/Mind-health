@@ -63,7 +63,10 @@ async function request(path, options = {}) {
       (res.status === 404
         ? 'Service endpoint not found.'
         : `Connection error (${res.status}). Please try again.`);
-    throw new Error(errorMsg);
+    const error = new Error(errorMsg);
+    error.status = res.status;
+    error.code = data?.code;
+    throw error;
   }
 
   if (data === null) {

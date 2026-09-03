@@ -18,8 +18,10 @@ export function AuthProvider({ children }) {
             setNeedsVerification(true);
           }
         })
-        .catch(() => {
-          clearToken();
+        .catch((err) => {
+          if (err?.status === 401) {
+            clearToken();
+          }
         })
         .finally(() => setLoading(false));
     } else {
