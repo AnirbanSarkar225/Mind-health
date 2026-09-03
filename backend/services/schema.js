@@ -96,6 +96,11 @@ CREATE POLICY "backend_access_feedback" ON public.feedback FOR ALL USING (true) 
 `;
 
 export async function createTables() {
+  if (!isPostgresMode()) {
+    console.log('  ✓ In-Memory Data Store Synchronized.');
+    return;
+  }
+
   const statements = TABLES_SQL.split(';').map(s => s.trim()).filter(s => s.length > 0);
   for (const stmt of statements) {
     try {
@@ -112,11 +117,6 @@ export async function createTables() {
     await query('ALTER TABLE sessions ADD COLUMN mood_snapshot TEXT');
   } catch (err) {
     // Column already exists — safe to ignore
-  }
-
-  if (!isPostgresMode()) {
-    console.log('  ✓ SQLite Database Schema Synchronized.');
-    return;
   }
 
   // Apply RLS and security policies to eliminate Supabase Security Advisor warnings

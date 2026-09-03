@@ -2,7 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 
-import { checkConnection } from './config/db.js';
+import { checkConnection, isPostgresMode } from './config/db.js';
 import { createTables } from './services/schema.js';
 import authRoutes from './routes/auth.js';
 import sessionRoutes from './routes/sessions.js';
@@ -42,7 +42,7 @@ app.get('/api/health', (req, res) => {
     status: databaseReady ? 'ok' : 'starting',
     version: '4.0.0',
     engine: 'Node.js/Express',
-    database: 'Supabase PostgreSQL Cloud',
+    database: isPostgresMode() ? 'Supabase PostgreSQL Cloud' : 'Local In-Memory Store',
     databaseReady,
   });
 });
@@ -52,7 +52,11 @@ async function start() {
   const server = app.listen(PORT, () => {
     console.log(`\n  ✓ Gita-NeuroSync API running on http://localhost:${PORT}`);
     console.log(`  ✓ Health check: http://localhost:${PORT}/api/health`);
-    console.log(`  ✓ Monitoring Supabase Cloud PostgreSQL on startup & reconnect...\n`);
+    if (isPostgresMode()) {
+      console.log(`  ✓ Monitoring Supabase Cloud PostgreSQL on startup & reconnect...\n`);
+    } else {
+      console.log(`  ✓ Mode: Local In-Memory Store (No external DB required)\n`);
+    }
   });
 
   server.on('error', (err) => {
@@ -63,18 +67,29 @@ async function start() {
     }
   });
 
-  // 2. Perform Supabase connection check and table synchronization asynchronously
+  // 2. Perform connection check and table synchronization asynchronously
   try {
-    console.log('  [INFO] Checking and monitoring Supabase PostgreSQL connection...');
-    await checkConnection(5, 2000);
+    if (isPostgresMode()) {
+      console.log('  [INFO] Checking and monitoring Supabase PostgreSQL connection...');
+      await checkConnection(5, 2000);
 
-    console.log('  [INFO] Synchronizing Supabase database tables & RLS security policies...');
-    await createTables();
-    databaseReady = true;
-    console.log('  ✓ Supabase Cloud PostgreSQL Schema & RLS Synchronized.\n');
+      console.log('  [INFO] Synchronizing Supabase database tables & RLS security policies...');
+      await createTables();
+      databaseReady = true;
+      console.log('  ✓ Supabase Cloud PostgreSQL Schema & RLS Synchronized.\n');
+    } else {
+      await checkConnection();
+      await createTables();
+      databaseReady = true;
+      console.log('  ✓ Local In-Memory Store Ready.\n');
+    }
   } catch (e) {
-    console.warn('  [WARN] Initial Supabase connection notice:', e.message);
-    console.log('  [INFO] Background reconnect monitor is active and will retry connection.\n');
+    if (isPostgresMode()) {
+      console.warn('  [WARN] Initial Supabase connection notice:', e.message);
+      console.log('  [INFO] Background reconnect monitor is active and will retry connection.\n');
+    } else {
+      console.error('  [ERROR] In-Memory initialization error:', e.message);
+    }
   }
 }
 

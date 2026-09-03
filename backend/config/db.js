@@ -1,5 +1,6 @@
 import pg from 'pg';
 import dns from 'dns';
+import memoryDb from './memoryDb.js';
 
 // Ensure IPv4 first on Windows to avoid IPv6 Supabase connection timeout
 if (typeof dns.setDefaultResultOrder === 'function') {
@@ -7,70 +8,79 @@ if (typeof dns.setDefaultResultOrder === 'function') {
 }
 
 const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-
-if (!databaseUrl) {
-  console.error('[DB FATAL] No DATABASE_URL or POSTGRES_URL environment variable set. Cannot connect to database.');
-  process.exit(1);
-}
-
-const { Pool } = pg;
+const isPostgres = Boolean(databaseUrl && databaseUrl.trim().length > 0);
 
 let pool = null;
 let isConnected = false;
 let reconnectTimer = null;
 
-function createPool() {
-  const isCloudHost = databaseUrl && !databaseUrl.includes('localhost') && !databaseUrl.includes('127.0.0.1');
-  const cleanUrl = databaseUrl ? databaseUrl.replace(/[?&]sslmode=[^&]+/g, '') : databaseUrl;
+if (!isPostgres) {
+  console.log('\n' + '='.repeat(64));
+  console.log('  ⚡ RUNNING IN LOCAL MEMORY MODE (NO EXTERNAL DB REQUIRED)');
+  console.log('  • Accounts, OTP verification, sessions & feedback work locally.');
+  console.log('  • Data resides in process memory for this session.');
+  console.log('  • To use persistent Supabase PostgreSQL, define DATABASE_URL in .env');
+  console.log('='.repeat(64) + '\n');
+} else {
+  const { Pool } = pg;
 
-  const newPool = new Pool({
-    connectionString: cleanUrl,
-    ssl: isCloudHost || process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : false,
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 15000,
-    keepAlive: true,
-    keepAliveInitialDelayMillis: 10000,
-  });
+  function createPool() {
+    const isCloudHost = databaseUrl && !databaseUrl.includes('localhost') && !databaseUrl.includes('127.0.0.1');
+    const cleanUrl = databaseUrl ? databaseUrl.replace(/[?&]sslmode=[^&]+/g, '') : databaseUrl;
 
-  newPool.on('error', (err) => {
-    console.error('[SUPABASE DB ERROR] Unexpected pool client error:', err.message);
-    isConnected = false;
-    scheduleReconnect();
-  });
+    const newPool = new Pool({
+      connectionString: cleanUrl,
+      ssl: isCloudHost || process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : false,
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 15000,
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10000,
+    });
 
-  newPool.on('connect', () => {
-    isConnected = true;
-  });
-
-  return newPool;
-}
-
-pool = createPool();
-
-function scheduleReconnect() {
-  if (reconnectTimer) return;
-  console.log('[SUPABASE DB] Scheduling automatic Supabase reconnect...');
-  reconnectTimer = setTimeout(async () => {
-    reconnectTimer = null;
-    try {
-      if (pool) {
-        await pool.end().catch(() => {});
-      }
-      pool = createPool();
-      await checkConnection(3, 2000);
-      console.log('[SUPABASE DB] Successfully re-established Supabase connection.');
-    } catch (e) {
-      console.warn('[SUPABASE DB] Reconnect attempt failed, will retry:', e.message);
+    newPool.on('error', (err) => {
+      console.error('[SUPABASE DB ERROR] Unexpected pool client error:', err.message);
+      isConnected = false;
       scheduleReconnect();
-    }
-  }, 5000);
+    });
+
+    newPool.on('connect', () => {
+      isConnected = true;
+    });
+
+    return newPool;
+  }
+
+  pool = createPool();
+
+  function scheduleReconnect() {
+    if (reconnectTimer) return;
+    console.log('[SUPABASE DB] Scheduling automatic Supabase reconnect...');
+    reconnectTimer = setTimeout(async () => {
+      reconnectTimer = null;
+      try {
+        if (pool) {
+          await pool.end().catch(() => {});
+        }
+        pool = createPool();
+        await checkConnection(3, 2000);
+        console.log('[SUPABASE DB] Successfully re-established Supabase connection.');
+      } catch (e) {
+        console.warn('[SUPABASE DB] Reconnect attempt failed, will retry:', e.message);
+        scheduleReconnect();
+      }
+    }, 5000);
+  }
 }
 
 /**
- * Health check & re-monitoring for Supabase PostgreSQL
+ * Health check & re-monitoring for Database (PostgreSQL or Local Memory)
  */
 export async function checkConnection(maxRetries = 5, delayMs = 2000) {
+  if (!isPostgres) {
+    return memoryDb.checkConnection(maxRetries, delayMs);
+  }
+
   let attempt = 0;
   while (attempt < maxRetries) {
     attempt++;
@@ -92,10 +102,15 @@ export async function checkConnection(maxRetries = 5, delayMs = 2000) {
 }
 
 /**
- * Database Query Adapter
- * Translates ? placeholders to PostgreSQL $1, $2 and handles transient retries.
+ * Universal Database Query Adapter
+ * In Postgres mode: Translates ? placeholders to $1, $2 and handles transient retries.
+ * In Memory mode: Dispatches to memoryDb.query()
  */
 export async function query(text, params = []) {
+  if (!isPostgres) {
+    return memoryDb.query(text, params);
+  }
+
   let paramIndex = 1;
   const pgText = text.replace(/\?/g, () => `$${paramIndex++}`);
 
@@ -126,5 +141,5 @@ export async function query(text, params = []) {
   }
 }
 
-export const isPostgresMode = () => true;
+export const isPostgresMode = () => isPostgres;
 export default { query, checkConnection, isPostgresMode };

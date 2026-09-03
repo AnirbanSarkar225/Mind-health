@@ -11,7 +11,7 @@ const frontendDir = path.join(__dirname, 'frontend');
 
 console.log('\n========================================');
 console.log(' Starting Gita-NeuroSync Services...');
-console.log(' Connecting to Supabase Cloud PostgreSQL');
+console.log(' Full-Stack Mental Health AI Platform');
 console.log('========================================\n');
 
 // Clean up any stale processes from previous runs on ports 5000 and 5173
