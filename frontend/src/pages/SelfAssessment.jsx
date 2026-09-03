@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import {
@@ -17,8 +17,12 @@ import {
   FiClock,
   FiBookOpen,
   FiArrowLeft,
+  FiMic,
+  FiCamera,
 } from 'react-icons/fi';
 import { FaBrain } from 'react-icons/fa6';
+import VoiceInput from '../components/VoiceInput';
+import CameraCapture from '../components/CameraCapture';
 
 const SYMPTOM_OPTIONS = [
   'Racing heart', 'Chest tightness', 'Shortness of breath',
@@ -643,6 +647,18 @@ export default function SelfAssessment() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Mood snapshot from camera capture (optional)
+  const [moodSnapshot, setMoodSnapshot] = useState(null);
+
+  // Voice input transcript handlers — append spoken text to description or notes
+  const handleVoiceDescription = useCallback((text) => {
+    setDescription((prev) => (prev ? prev + ' ' : '') + text);
+  }, []);
+
+  const handleVoiceNotes = useCallback((text) => {
+    setAdditionalNotes((prev) => (prev ? prev + ' ' : '') + text);
+  }, []);
+
   // Dynamically compute targeted questions based on the user's description and selected symptoms
   const targetedQuestionData = useMemo(() => {
     return generateTargetedQuestions(description, symptoms);
@@ -698,6 +714,7 @@ export default function SelfAssessment() {
         state: inferred,
         method: 'Cognitive Self-Assessment',
         confidence: 0.80,
+        moodSnapshot: moodSnapshot || undefined,
       });
 
       await api.saveFeedback({
@@ -745,6 +762,7 @@ export default function SelfAssessment() {
     setResultVerse(null);
     setDiagnosedState('');
     setError('');
+    setMoodSnapshot(null);
   };
 
   const getConcept = () => {
@@ -845,7 +863,7 @@ export default function SelfAssessment() {
 
           <CardContent style={{ padding: '1rem 2rem 2rem' }}>
             <form onSubmit={handleProceedToQuestions}>
-              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
                 <textarea
                   className="form-control"
                   rows={6}
@@ -856,6 +874,38 @@ export default function SelfAssessment() {
                   required
                   style={{ fontSize: '1.05rem', lineHeight: '1.7', padding: '1.25rem', borderRadius: '14px' }}
                 />
+              </div>
+
+              {/* ── Voice Input: Speak your problem in any language ── */}
+              <div style={{ marginBottom: '1rem' }}>
+                <VoiceInput onTranscript={handleVoiceDescription} />
+              </div>
+
+              {/* ── Camera: Optional mood snapshot ──────────────── */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <CameraCapture
+                  compact
+                  onSnapshot={(dataUrl) => setMoodSnapshot(dataUrl)}
+                />
+                {moodSnapshot && (
+                  <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <img
+                      src={moodSnapshot}
+                      alt="Mood snapshot captured"
+                      style={{ width: 48, height: 48, borderRadius: '10px', objectFit: 'cover', border: '2px solid var(--sage)' }}
+                    />
+                    <span style={{ fontSize: '0.85rem', color: 'var(--sage)', fontWeight: 700 }}>
+                      ✓ Mood snapshot captured
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setMoodSnapshot(null)}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.82rem', textDecoration: 'underline' }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
@@ -1001,11 +1051,12 @@ export default function SelfAssessment() {
                   <textarea
                     className="form-control"
                     rows={3}
-                    placeholder="Type additional clinical context or notes here..."
+                    placeholder="Type or speak additional clinical context or notes here..."
                     value={additionalNotes}
                     onChange={(e) => setAdditionalNotes(e.target.value)}
-                    style={{ borderRadius: '12px', fontSize: '0.96rem' }}
+                    style={{ borderRadius: '12px', fontSize: '0.96rem', marginBottom: '0.75rem' }}
                   />
+                  <VoiceInput onTranscript={handleVoiceNotes} compact />
                 </div>
               </CardContent>
             </Card>

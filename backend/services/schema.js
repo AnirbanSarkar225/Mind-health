@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     detected_state      TEXT NOT NULL,
     classifier_method   TEXT NOT NULL,
     confidence          REAL NOT NULL,
+    mood_snapshot       TEXT,
     created_at          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -104,6 +105,13 @@ export async function createTables() {
         console.warn(`[SCHEMA NOTICE] Table statement warning: ${err.message}`);
       }
     }
+  }
+
+  // Migration: add mood_snapshot column to existing sessions table
+  try {
+    await query('ALTER TABLE sessions ADD COLUMN mood_snapshot TEXT');
+  } catch (err) {
+    // Column already exists — safe to ignore
   }
 
   if (!isPostgresMode()) {
