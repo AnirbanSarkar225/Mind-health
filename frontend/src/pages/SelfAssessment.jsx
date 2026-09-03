@@ -637,7 +637,7 @@ export default function SelfAssessment() {
 
   const [lang, setLang] = useState('en');
   const [diagnosedState, setDiagnosedState] = useState('');
-  const [newAccuracy, setNewAccuracy] = useState(86.0);
+  const [newAccuracy, setNewAccuracy] = useState(69.8);
   const [resultVerse, setResultVerse] = useState(null);
 
   const [loading, setLoading] = useState(false);

@@ -4,7 +4,7 @@ export const ML_CONFIDENCE_THRESHOLD = 0.50;
 const TEMPERATURE_SCALE = 2.5;
 
 let baselineEvaluations = 4000;
-let correctEvaluations = 3440;
+let correctEvaluations = 2792;
 let totalFeedbackUpdates = 0;
 
 export function getDynamicAccuracy() {

@@ -127,7 +127,7 @@ export default function HardwareAnalysis() {
                 <span className={`state-badge ${getStateClass(classification.state)}`} style={{ fontSize: '1.1rem', padding: '6px 18px' }}>{classification.state}</span>
               </div>
               <div style={{ textAlign: 'center', fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
-                {classification.method} · Confidence: <strong style={{color:'var(--primary)'}}>{Math.min(80, Math.round((classification.confidence || 0.8) * 100))}%</strong> · Dynamic Accuracy: <strong style={{color:'var(--accent)'}}>{classification.dynamicAccuracy || 86.0}%</strong>
+                {classification.method} · Confidence: <strong style={{color:'var(--primary)'}}>{Math.min(69.8, Math.round((classification.confidence || 0.698) * 100))}%</strong> · Dynamic Accuracy: <strong style={{color:'var(--accent)'}}>{classification.dynamicAccuracy || 69.8}%</strong>
               </div>
               <div className="grid-2" style={{ gap: '1rem', marginBottom: '1.25rem' }}>
                 <div className="metric-card" style={{ padding: '1.25rem' }}>
@@ -199,7 +199,7 @@ export default function HardwareAnalysis() {
                   <div style={{ fontSize: '1.45rem', fontWeight: 800, marginTop: '4px' }}>{classification.state}</div>
                 </div>
                 <span style={{ background: 'rgba(76,114,255,0.15)', border: '1px solid var(--primary)', color: 'var(--primary)', padding: '6px 16px', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 800 }}>
-                  {classification.method} · {Math.round(classification.confidence * 100)}% Conf · {classification.dynamicAccuracy || 86.0}% Recalibrated Acc
+                  {classification.method} · {Math.round(classification.confidence * 100)}% Conf · {classification.dynamicAccuracy || 69.8}% Recalibrated Acc
                 </span>
               </div>
 

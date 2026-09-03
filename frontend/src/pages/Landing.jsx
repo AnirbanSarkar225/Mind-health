@@ -359,13 +359,13 @@ export default function Landing() {
           <p>We provide world-class neuro-psychological assessment with our expert team. Personalized care utilizing advanced biosignal technology and Vedantic wisdom.</p>
           <div className="progress-container">
             <div className="progress-label">
-              <span className="progress-dot"></span> Assessment Accuracy 85.34%
+              <span className="progress-dot"></span> Assessment Accuracy 69.8%
             </div>
             <div className="progress-bar-track">
               <motion.div
                 className="progress-bar-fill"
                 initial={{ width: 0 }}
-                whileInView={{ width: '85.34%' }}
+                whileInView={{ width: '69.8%' }}
                 viewport={{ once: true }}
                 transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
               />

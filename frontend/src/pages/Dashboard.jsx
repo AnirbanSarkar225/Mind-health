@@ -46,14 +46,14 @@ export default function Dashboard() {
     mostFrequentState: 'N/A',
     avgAttention: 0,
     avgConfidence: 0,
-    dynamicAccuracy: 85.34,
+    dynamicAccuracy: 69.8,
     totalFeedback: 0,
   };
 
   const lastStr = s.lastSessionAt
     ? new Date(s.lastSessionAt).toLocaleString().slice(0, 19)
     : 'No sessions recorded';
-  const liveAccuracy = s.dynamicAccuracy || 85.34;
+  const liveAccuracy = s.dynamicAccuracy || 69.8;
   const isSelf = latestSession?.classifier_method?.toLowerCase().includes('self');
 
   return (

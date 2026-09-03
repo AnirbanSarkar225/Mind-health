@@ -183,7 +183,7 @@ export default function SessionHistory() {
   const hardwareSessions = sessions.filter(s => !s.classifier_method?.toLowerCase().includes('self'));
   const hwCount = hardwareSessions.length;
   const avgBAR = hwCount > 0 ? (hardwareSessions.reduce((a, s) => a + (s.beta_alpha_ratio || 0), 0) / hwCount).toFixed(2) : '0.00';
-  const avgConf = total > 0 ? (Math.min(80.0, (sessions.reduce((a, s) => a + Math.min(0.80, s.confidence || 0.80), 0) / total * 100))).toFixed(1) : '80.0';
+  const avgConf = total > 0 ? (Math.min(69.8, (sessions.reduce((a, s) => a + Math.min(0.698, s.confidence || 0.698), 0) / total * 100))).toFixed(1) : '69.8';
 
   const dist = {};
   sessions.forEach(s => { dist[s.detected_state] = (dist[s.detected_state] || 0) + 1; });

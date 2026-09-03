@@ -16,7 +16,7 @@ export default function Account() {
     api.getStats().then(d => setStats(d.stats)).catch(() => {});
   }, []);
 
-  const s = stats || { totalSessions: 0, lastSessionAt: null, mostFrequentState: 'N/A', avgAttention: 0, avgMeditation: 0, avgConfidence: 0, dynamicAccuracy: 86.0, totalFeedback: 0 };
+  const s = stats || { totalSessions: 0, lastSessionAt: null, mostFrequentState: 'N/A', avgAttention: 0, avgMeditation: 0, avgConfidence: 0, dynamicAccuracy: 69.8, totalFeedback: 0 };
 
   const exportDirectPDF = async () => {
     setDownloading(true);
@@ -70,7 +70,7 @@ export default function Account() {
       doc.text('DYNAMIC ACCURACY', 142, 40);
       doc.setFontSize(13);
       doc.setTextColor(16, 185, 129);
-      doc.text(`${s.dynamicAccuracy || 86.0}%`, 142, 48);
+      doc.text(`${s.dynamicAccuracy || 69.8}%`, 142, 48);
 
       doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
@@ -176,9 +176,9 @@ export default function Account() {
           <div className="card-subtle" style={{ padding: '1.5rem', fontSize: '1rem', lineHeight: '1.8' }}>
             <strong>Total Sessions:</strong> {s.totalSessions}<br />
             <strong>Most Frequent State:</strong> {s.mostFrequentState}<br />
-            <strong>Dynamic Model Accuracy:</strong> {s.dynamicAccuracy || 86.0}% (Self-Tuning)<br />
+            <strong>Dynamic Model Accuracy:</strong> {s.dynamicAccuracy || 69.8}% (Self-Tuning)<br />
             <strong>Feedback Contributions:</strong> {s.totalFeedback}<br />
-            <strong>Avg Confidence:</strong> {(Math.min(0.80, s.avgConfidence || 0.80) * 100).toFixed(1)}%<br />
+            <strong>Avg Confidence:</strong> {(Math.min(0.698, s.avgConfidence || 0.698) * 100).toFixed(1)}%<br />
             <strong>Last Session:</strong> {s.lastSessionAt ? new Date(s.lastSessionAt).toLocaleString() : 'N/A'}
           </div>
         </div>
