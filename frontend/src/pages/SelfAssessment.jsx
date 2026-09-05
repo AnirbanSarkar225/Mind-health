@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import {
@@ -19,6 +19,7 @@ import {
   FiArrowLeft,
   FiMic,
   FiCamera,
+  FiCpu,
 } from 'react-icons/fi';
 import { FaBrain } from 'react-icons/fa6';
 import VoiceInput from '../components/VoiceInput';
@@ -650,6 +651,25 @@ export default function SelfAssessment() {
   // Mood snapshot from camera capture (optional)
   const [moodSnapshot, setMoodSnapshot] = useState(null);
 
+  // ── LLM & Neural Processing State ─────────────────────────────────────────
+  const [llmAvailable, setLlmAvailable] = useState(false);
+  const [llmQuestions, setLlmQuestions] = useState(null);       // AI-generated questions
+  const [llmQuestionsLoading, setLlmQuestionsLoading] = useState(false);
+  const [neuralQuestions, setNeuralQuestions] = useState(null);  // Neural processing questions from EEG
+  const [llmAnalysis, setLlmAnalysis] = useState(null);         // Deep LLM analysis for Step 3
+  const [llmAnalysisLoading, setLlmAnalysisLoading] = useState(false);
+  const [esp32Data, setEsp32Data] = useState(null);              // Latest ESP32 reading
+
+  // Check LLM availability & ESP32 data on mount
+  useEffect(() => {
+    api.llmStatus()
+      .then((d) => setLlmAvailable(d.available))
+      .catch(() => setLlmAvailable(false));
+    api.getESP32Latest()
+      .then((d) => { if (d && d.reading) setEsp32Data(d.reading); })
+      .catch(() => {});
+  }, []);
+
   // Voice input transcript handlers — append spoken text to description or notes
   const handleVoiceDescription = useCallback((text) => {
     setDescription((prev) => (prev ? prev + ' ' : '') + text);
@@ -664,7 +684,79 @@ export default function SelfAssessment() {
     return generateTargetedQuestions(description, symptoms);
   }, [description, symptoms]);
 
-  const handleProceedToQuestions = (e) => {
+  // Generate neural processing questions from EEG data
+  const generateNeuralProcessingQuestions = useCallback((eegData) => {
+    if (!eegData) return null;
+    const { attention, meditation, alpha, beta, theta, ba_ratio } = eegData;
+    const questions = [];
+
+    // High beta/alpha ratio → cognitive hyperactivation
+    if (ba_ratio >= 1.8) {
+      questions.push({
+        id: 'q_neural_hyperactive',
+        text: `Your beta/alpha ratio is elevated (${ba_ratio?.toFixed(2)}) indicating cognitive hyperactivation. Which best describes your current mental experience?`,
+        options: [
+          'Racing thoughts that are difficult to slow down or redirect',
+          'Heightened alertness and focus, but with underlying tension',
+          'Mental restlessness with an inability to settle into one task',
+        ],
+      });
+    }
+
+    // High theta dominance → drowsy/meditative
+    if (theta > alpha && theta > beta) {
+      questions.push({
+        id: 'q_neural_theta',
+        text: `Your theta waves are dominant (${theta?.toFixed(1)}μV), suggesting a drowsy or deeply meditative state. How does your conscious experience align?`,
+        options: [
+          'I feel deeply relaxed, almost meditative, with slow drifting thoughts',
+          'I am mentally foggy and struggling to maintain focus or clarity',
+          'I feel emotionally withdrawn, low energy, and disconnected from surroundings',
+        ],
+      });
+    }
+
+    // High alpha dominance → calm/relaxed
+    if (alpha > beta * 1.5 && meditation > 60) {
+      questions.push({
+        id: 'q_neural_calm',
+        text: `Your alpha waves are strong (${alpha?.toFixed(1)}μV) with high meditation score (${meditation?.toFixed(0)}). This suggests a calm, centered state. What resonates most?`,
+        options: [
+          'I feel genuinely peaceful, grounded, and present in the moment',
+          'I am physically relaxed but my mind still carries unresolved thoughts',
+          'I feel comfortable but slightly drowsy or ready for rest',
+        ],
+      });
+    }
+
+    // Attention fluctuation
+    if (attention < 35) {
+      questions.push({
+        id: 'q_neural_attention',
+        text: `Your EEG attention score is low (${attention?.toFixed(0)}/100). What is contributing to this difficulty concentrating?`,
+        options: [
+          'Emotional distress or worry that hijacks my focus repeatedly',
+          'Physical fatigue, poor sleep, or exhaustion reducing mental stamina',
+          'Lack of motivation or interest making it hard to engage with tasks',
+        ],
+      });
+    } else if (attention > 75) {
+      questions.push({
+        id: 'q_neural_hyperfocus',
+        text: `Your EEG attention is very high (${attention?.toFixed(0)}/100). How does this intense focus feel?`,
+        options: [
+          'Productive and clear — I am deeply engaged in a meaningful task',
+          'Anxious hyper-vigilance — I cannot relax or disengage from worry',
+          'Compulsive fixation on a problem or thought I cannot let go of',
+        ],
+      });
+    }
+
+    return questions.length > 0 ? { focusTags: ['Neural Processing', 'Brainwave Analysis', 'EEG-Guided Assessment'], questions } : null;
+  }, []);
+
+
+  const handleProceedToQuestions = async (e) => {
     e.preventDefault();
     if (!description.trim()) {
       setError('Please describe your current feelings or situation to generate targeted clinical questions.');
@@ -672,6 +764,34 @@ export default function SelfAssessment() {
     }
     setError('');
     setAnswers({});
+
+    // Generate neural processing questions from ESP32 data if available
+    if (esp32Data) {
+      const nq = generateNeuralProcessingQuestions(esp32Data);
+      setNeuralQuestions(nq);
+    }
+
+    // Try LLM-powered question generation
+    if (llmAvailable) {
+      setLlmQuestionsLoading(true);
+      try {
+        const res = await api.llmGenerateQuestions({
+          description: description.trim(),
+          symptoms,
+          eegData: esp32Data || null,
+        });
+        if (res && res.questions && !res.fallback) {
+          setLlmQuestions({
+            focusTags: ['AI-Generated', 'Gemini Analysis', 'Deep Clinical Inquiry'],
+            questions: res.questions,
+          });
+        }
+      } catch (err) {
+        console.warn('LLM question generation failed, using fallback:', err);
+      }
+      setLlmQuestionsLoading(false);
+    }
+
     setStep(2);
   };
 
@@ -705,14 +825,14 @@ export default function SelfAssessment() {
       const combinedNotes = `Description: ${description} | Q&A: ${Object.entries(answers).map(([k, v]) => `${k}:${v}`).join('; ')} | Other: ${additionalNotes}`;
 
       const sessRes = await api.saveSessions({
-        attention: 0,
-        meditation: 0,
-        alpha: 0,
-        beta: 0,
-        theta: 0,
-        baRatio: 0,
+        attention: esp32Data?.attention ?? 0,
+        meditation: esp32Data?.meditation ?? 0,
+        alpha: esp32Data?.alpha ?? 0,
+        beta: esp32Data?.beta ?? 0,
+        theta: esp32Data?.theta ?? 0,
+        baRatio: esp32Data?.ba_ratio ?? 0,
         state: inferred,
-        method: 'Cognitive Self-Assessment',
+        method: esp32Data ? 'Cognitive Self-Assessment + EEG' : 'Cognitive Self-Assessment',
         confidence: 0.80,
         moodSnapshot: moodSnapshot || undefined,
       });
@@ -727,12 +847,12 @@ export default function SelfAssessment() {
       });
 
       const updateRes = await api.updateClassifier({
-        attention: 50,
-        meditation: 50,
-        alpha: 15,
-        beta: 10,
-        theta: 10,
-        baRatio: 0.67,
+        attention: esp32Data?.attention ?? 50,
+        meditation: esp32Data?.meditation ?? 50,
+        alpha: esp32Data?.alpha ?? 15,
+        beta: esp32Data?.beta ?? 10,
+        theta: esp32Data?.theta ?? 10,
+        baRatio: esp32Data?.ba_ratio ?? 0.67,
         trueState: inferred,
         feedbackScore: discomfort,
       });
@@ -746,6 +866,20 @@ export default function SelfAssessment() {
       }
 
       setStep(3);
+
+      // Fire LLM deep analysis asynchronously (non-blocking)
+      if (llmAvailable) {
+        setLlmAnalysisLoading(true);
+        api.llmAnalyze({
+          signals: esp32Data || { attention: 0, meditation: 0, alpha: 0, beta: 0, theta: 0, ba_ratio: 0 },
+          answers,
+          state: inferred,
+          description: `${description} | Symptoms: ${symptoms.join(', ')} | Notes: ${additionalNotes}`,
+        }).then((res) => {
+          if (res && !res.fallback) setLlmAnalysis(res);
+        }).catch(() => {}).finally(() => setLlmAnalysisLoading(false));
+      }
+
     } catch (err) {
       setError(err.message);
     }
@@ -1102,6 +1236,108 @@ export default function SelfAssessment() {
             </div>
           </div>
 
+          {/* ── Neural Processing Questions (from live EEG data) ── */}
+          {neuralQuestions && neuralQuestions.questions.length > 0 && (
+            <Card style={{ marginBottom: '2rem', borderLeft: '5px solid #8B5CF6', background: 'linear-gradient(135deg, rgba(139,92,246,0.06), rgba(59,130,246,0.04))' }}>
+              <CardHeader>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <CardTitle style={{ fontSize: '1.35rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FaBrain size={18} color="#8B5CF6" /> Neural Processing Questions
+                  </CardTitle>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {neuralQuestions.focusTags.map((tag) => (
+                      <span key={tag} style={{ background: 'rgba(139,92,246,0.15)', color: '#8B5CF6', padding: '3px 10px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800 }}>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <CardDescription style={{ fontSize: '0.95rem' }}>
+                  Questions generated from your live EEG brainwave patterns — these help correlate neural signals with conscious experience
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+                  {neuralQuestions.questions.map((q, idx) => (
+                    <div key={q.id}>
+                      <label style={{ fontSize: '1.02rem', fontWeight: 700, color: '#8B5CF6', display: 'block', marginBottom: '0.75rem', lineHeight: '1.5' }}>
+                        🧠 {q.text}
+                      </label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                        {q.options.map((opt) => (
+                          <label key={opt} style={{
+                            display: 'flex', alignItems: 'flex-start', gap: '0.85rem', fontSize: '0.96rem',
+                            padding: '12px 16px', borderRadius: '12px', cursor: 'pointer',
+                            background: answers[q.id] === opt ? 'rgba(139,92,246,0.12)' : 'var(--bg-subtle)',
+                            border: answers[q.id] === opt ? '1.5px solid #8B5CF6' : '1px solid var(--border)',
+                            transition: 'all 0.15s ease', lineHeight: '1.5',
+                          }}>
+                            <input type="radio" name={q.id} checked={answers[q.id] === opt} onChange={() => handleAnswerSelect(q.id, opt)} style={{ marginTop: '4px' }} />
+                            <span style={{ color: answers[q.id] === opt ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: answers[q.id] === opt ? 700 : 400 }}>{opt}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── LLM-Generated Questions (from Gemini AI) ───────── */}
+          {llmQuestionsLoading && (
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+              <FaBrain size={20} color="#8B5CF6" style={{ marginBottom: '8px' }} /><br />
+              Gemini AI is generating targeted clinical questions...
+            </div>
+          )}
+          {llmQuestions && llmQuestions.questions.length > 0 && (
+            <Card style={{ marginBottom: '2rem', borderLeft: '5px solid #10B981', background: 'linear-gradient(135deg, rgba(16,185,129,0.06), rgba(76,114,255,0.04))' }}>
+              <CardHeader>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <CardTitle style={{ fontSize: '1.35rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FiCpu size={18} color="#10B981" /> AI-Generated Deep Inquiries
+                  </CardTitle>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {llmQuestions.focusTags.map((tag) => (
+                      <span key={tag} style={{ background: 'rgba(16,185,129,0.15)', color: '#10B981', padding: '3px 10px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800 }}>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <CardDescription style={{ fontSize: '0.95rem' }}>
+                  Questions generated by Google Gemini AI based on your specific problem context{esp32Data ? ' and live brainwave data' : ''}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+                  {llmQuestions.questions.map((q, idx) => (
+                    <div key={q.id}>
+                      <label style={{ fontSize: '1.02rem', fontWeight: 700, color: '#10B981', display: 'block', marginBottom: '0.75rem', lineHeight: '1.5' }}>
+                        🤖 {q.text}
+                      </label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                        {q.options.map((opt) => (
+                          <label key={opt} style={{
+                            display: 'flex', alignItems: 'flex-start', gap: '0.85rem', fontSize: '0.96rem',
+                            padding: '12px 16px', borderRadius: '12px', cursor: 'pointer',
+                            background: answers[q.id] === opt ? 'rgba(16,185,129,0.12)' : 'var(--bg-subtle)',
+                            border: answers[q.id] === opt ? '1.5px solid #10B981' : '1px solid var(--border)',
+                            transition: 'all 0.15s ease', lineHeight: '1.5',
+                          }}>
+                            <input type="radio" name={q.id} checked={answers[q.id] === opt} onChange={() => handleAnswerSelect(q.id, opt)} style={{ marginTop: '4px' }} />
+                            <span style={{ color: answers[q.id] === opt ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: answers[q.id] === opt ? 700 : 400 }}>{opt}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginBottom: '3rem', flexWrap: 'wrap' }}>
             <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}>
               &larr; Back to Problem Description
@@ -1187,6 +1423,54 @@ export default function SelfAssessment() {
               </div>
             </CardContent>
           </Card>
+
+          {/* ── LLM Deep Analysis (Gemini) ──────────────────────── */}
+          {(llmAnalysisLoading || llmAnalysis) && (
+            <Card style={{ marginBottom: '2rem', borderLeft: '5px solid #8B5CF6', background: 'linear-gradient(135deg, rgba(139,92,246,0.06), rgba(76,114,255,0.04))' }}>
+              <CardContent style={{ padding: '1.85rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
+                  <FaBrain size={20} color="#8B5CF6" />
+                  <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#8B5CF6', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    AI Deep Analysis — Google Gemini
+                  </span>
+                </div>
+                {llmAnalysisLoading ? (
+                  <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+                    Gemini is analyzing your session data, symptoms, and responses...
+                  </div>
+                ) : llmAnalysis ? (
+                  <>
+                    {llmAnalysis.summary && (
+                      <p style={{ fontSize: '1.05rem', lineHeight: '1.8', marginBottom: '1.25rem', color: 'var(--text-primary)', fontWeight: 500 }}>
+                        {llmAnalysis.summary}
+                      </p>
+                    )}
+                    {llmAnalysis.insights && llmAnalysis.insights.length > 0 && (
+                      <div style={{ marginBottom: '1.25rem' }}>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: '#8B5CF6', marginBottom: '0.5rem' }}>Key Clinical Insights</div>
+                        <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.98rem', lineHeight: '1.8', color: 'var(--text-secondary)' }}>
+                          {llmAnalysis.insights.map((ins, i) => <li key={i}>{ins}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    {llmAnalysis.recommendations && llmAnalysis.recommendations.length > 0 && (
+                      <div style={{ marginBottom: '1.25rem' }}>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: '#10B981', marginBottom: '0.5rem' }}>Personalized Recommendations</div>
+                        <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.98rem', lineHeight: '1.8', color: 'var(--text-secondary)' }}>
+                          {llmAnalysis.recommendations.map((rec, i) => <li key={i}>{rec}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    {llmAnalysis.neuralPattern && (
+                      <div style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '12px', padding: '12px 16px', fontSize: '0.96rem', color: 'var(--text-primary)', lineHeight: '1.7' }}>
+                        <strong style={{ color: '#8B5CF6' }}>Neural Pattern Interpretation:</strong> {llmAnalysis.neuralPattern}
+                      </div>
+                    )}
+                  </>
+                ) : null}
+              </CardContent>
+            </Card>
+          )}
 
           {physicalAct && (
             <Card style={{ marginBottom: '2rem', borderLeft: '6px solid #10B981' }}>

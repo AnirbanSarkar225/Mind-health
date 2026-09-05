@@ -8,6 +8,9 @@ import authRoutes from './routes/auth.js';
 import sessionRoutes from './routes/sessions.js';
 import feedbackRoutes from './routes/feedback.js';
 import classifyRoutes from './routes/classify.js';
+import esp32Routes from './routes/esp32.js';
+import llmRoutes from './routes/llmRoutes.js';
+import { setupWebSocket } from './services/websocket.js';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '5000');
@@ -20,6 +23,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'x-requested-with', 'Accept'],
 }));
 app.use(express.json({ limit: '5mb' }));
+
+app.use('/api/esp32', esp32Routes);
+app.use('/api/llm', llmRoutes);
 
 app.use('/api', (req, res, next) => {
   if (req.path === '/health' || databaseReady) {
@@ -58,6 +64,8 @@ async function start() {
       console.log(`  ✓ Mode: Local In-Memory Store (No external DB required)\n`);
     }
   });
+  
+  setupWebSocket(server);
 
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {

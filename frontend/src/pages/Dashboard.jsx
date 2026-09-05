@@ -29,6 +29,10 @@ export default function Dashboard() {
   const [latestSession, setLatestSession] = useState(null);
   const [, setLoading] = useState(true);
 
+  // ── ESP32 & LLM status ───────────────────────────────────────────────────
+  const [esp32Status, setEsp32Status] = useState(null);
+  const [llmStatus, setLlmStatus] = useState(null);
+
   useEffect(() => {
     Promise.all([
       api.getStats().then((d) => setStats(d.stats)).catch(() => {}),
@@ -37,6 +41,8 @@ export default function Dashboard() {
           setLatestSession(d.sessions[0]);
         }
       }).catch(() => {}),
+      api.getESP32Status().then((d) => setEsp32Status(d)).catch(() => {}),
+      api.llmStatus().then((d) => setLlmStatus(d)).catch(() => {}),
     ]).finally(() => setLoading(false));
   }, []);
 
@@ -66,6 +72,26 @@ export default function Dashboard() {
               <span className="medical-live-indicator"></span>
               Clinical Telemetry System
             </span>
+            {esp32Status?.connected && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '5px',
+                background: 'rgba(16,185,129,0.12)', border: '1.5px solid #10B981',
+                color: '#10B981', padding: '4px 10px', borderRadius: '16px',
+                fontSize: '0.78rem', fontWeight: 800,
+              }}>
+                <FiCpu size={12} /> ESP32 Live
+              </span>
+            )}
+            {llmStatus?.available && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '5px',
+                background: 'rgba(139,92,246,0.12)', border: '1.5px solid #8B5CF6',
+                color: '#8B5CF6', padding: '4px 10px', borderRadius: '16px',
+                fontSize: '0.78rem', fontWeight: 800,
+              }}>
+                <FaBrain size={11} /> Gemini AI
+              </span>
+            )}
             <span style={{ fontSize: '0.88rem', color: 'var(--text-muted)', fontWeight: 600 }}>
               Gita-NeuroSync v2.4
             </span>

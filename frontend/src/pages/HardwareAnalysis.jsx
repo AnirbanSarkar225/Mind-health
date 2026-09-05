@@ -1,14 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
-import { FiActivity, FiClock, FiCheckCircle, FiArrowLeft } from 'react-icons/fi';
-import { FaWaveSquare } from 'react-icons/fa6';
+import useESP32Data from '../hooks/useESP32Data';
+import { FiActivity, FiClock, FiCheckCircle, FiArrowLeft, FiWifi, FiWifiOff, FiCpu, FiZap } from 'react-icons/fi';
+import { FaWaveSquare, FaBrain } from 'react-icons/fa6';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const BAR_COLORS = ['var(--red-soft)', 'var(--blue-soft)', 'var(--amber-soft)', 'var(--green-soft)'];
 const BAR_LABELS = ['Anxiety', 'Depression', 'Stress', 'Equilibrium'];
 
 export default function HardwareAnalysis() {
   const navigate = useNavigate();
+
+  // ── Live ESP32 data via WebSocket ────────────────────────────────────────
+  const { latestData, classification: liveClassification, history, connectionStatus, isLive, reconnect } = useESP32Data({ maxHistory: 120 });
+
+  // ── Manual signals (fallback when ESP32 not connected) ───────────────────
   const [signals, setSignals] = useState({
     attention: 50,
     meditation: 50,
@@ -20,6 +27,42 @@ export default function HardwareAnalysis() {
   const [classification, setClassification] = useState(null);
   const [useML, setUseML] = useState(true);
   const [lang, setLang] = useState('en');
+  const [savedMessage, setSavedMessage] = useState('');
+
+  // ── LLM State ────────────────────────────────────────────────────────────
+  const [llmAvailable, setLlmAvailable] = useState(false);
+  const [neuralInsight, setNeuralInsight] = useState(null);
+  const [llmCalibration, setLlmCalibration] = useState(null);
+  const [useLLMCalibration, setUseLLMCalibration] = useState(true);
+  const [insightLoading, setInsightLoading] = useState(false);
+
+  // Check LLM availability on mount
+  useEffect(() => {
+    api.llmStatus()
+      .then((d) => setLlmAvailable(d.available))
+      .catch(() => setLlmAvailable(false));
+  }, []);
+
+  // Auto-populate signals from live ESP32 data
+  useEffect(() => {
+    if (isLive && latestData) {
+      setSignals({
+        attention: latestData.attention ?? 50,
+        meditation: latestData.meditation ?? 50,
+        alpha: latestData.alpha ?? 15,
+        beta: latestData.beta ?? 10,
+        theta: latestData.theta ?? 12,
+        baRatio: latestData.ba_ratio ?? 0.67,
+      });
+    }
+  }, [isLive, latestData]);
+
+  // Auto-classify from live data
+  useEffect(() => {
+    if (liveClassification) {
+      setClassification(liveClassification);
+    }
+  }, [liveClassification]);
 
   const updateSignal = (key, val) => {
     setSignals(prev => {
@@ -32,8 +75,6 @@ export default function HardwareAnalysis() {
       return next;
     });
   };
-
-  const [savedMessage, setSavedMessage] = useState('');
 
   const runClassification = async () => {
     try {
@@ -48,6 +89,18 @@ export default function HardwareAnalysis() {
       });
       setClassification(result);
 
+      // LLM Calibration (if enabled and available)
+      if (useLLMCalibration && llmAvailable) {
+        api.llmCalibrate({
+          signals,
+          ruleState: result.state,
+          mlState: result.state,
+          confidence: result.confidence,
+        }).then((cal) => {
+          if (cal && !cal.fallback) setLlmCalibration(cal);
+        }).catch(() => {});
+      }
+
       await api.saveSessions({
         attention: signals.attention,
         meditation: signals.meditation,
@@ -56,17 +109,49 @@ export default function HardwareAnalysis() {
         theta: signals.theta,
         baRatio: signals.baRatio,
         state: result.state,
-        method: result.method || 'BioAmp Hardware Stream',
+        method: isLive ? 'BioAmp Live Stream' : (result.method || 'BioAmp Hardware Stream'),
         confidence: Math.min(0.80, result.confidence || 0.80),
       });
-      setSavedMessage('Live hardware sensor recording saved to session history');
+      setSavedMessage(isLive ? 'Live ESP32 sensor recording saved' : 'Hardware sensor recording saved to session history');
       setTimeout(() => setSavedMessage(''), 4000);
     } catch (e) {
       console.error(e);
     }
   };
 
+  // Fetch LLM neural insight
+  const fetchNeuralInsight = async () => {
+    if (!llmAvailable) return;
+    setInsightLoading(true);
+    try {
+      const res = await api.llmAnalyze({
+        signals,
+        answers: {},
+        state: classification?.state || 'unknown',
+        description: `Live EEG reading - Attention: ${signals.attention}, Meditation: ${signals.meditation}, Alpha: ${signals.alpha}μV, Beta: ${signals.beta}μV, Theta: ${signals.theta}μV, B/A Ratio: ${signals.baRatio}`,
+      });
+      if (res && !res.fallback) {
+        setNeuralInsight(res);
+      }
+    } catch (e) {
+      console.error('Neural insight error:', e);
+    }
+    setInsightLoading(false);
+  };
+
   const verse = classification?.verse;
+  const statusColor = connectionStatus === 'connected' ? '#10B981' : connectionStatus === 'reconnecting' ? '#F59E0B' : '#EF4444';
+  const statusIcon = connectionStatus === 'connected' ? <FiWifi size={14} /> : <FiWifiOff size={14} />;
+  const statusText = connectionStatus === 'connected' ? 'ESP32 Live' : connectionStatus === 'reconnecting' ? 'Reconnecting...' : 'Disconnected';
+
+  // Prepare chart data
+  const chartData = history.slice(-60).map((r, i) => ({
+    idx: i,
+    alpha: r.alpha?.toFixed(1) ?? 0,
+    beta: r.beta?.toFixed(1) ?? 0,
+    theta: r.theta?.toFixed(1) ?? 0,
+    attention: r.attention?.toFixed(0) ?? 0,
+  }));
 
   return (
     <>
@@ -74,33 +159,98 @@ export default function HardwareAnalysis() {
         <FiArrowLeft size={16} /> Back to Dashboard
       </button>
       <div className="page-header" style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
           <span className="medical-header-badge">
             <FaWaveSquare size={13} /> Hardware Telemetry
           </span>
+          {/* ── Live Connection Status Badge ───────────── */}
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            background: `${statusColor}18`, border: `1.5px solid ${statusColor}`,
+            color: statusColor, padding: '4px 12px', borderRadius: '20px',
+            fontSize: '0.82rem', fontWeight: 800,
+          }}>
+            {statusIcon} {statusText}
+          </span>
+          {llmAvailable && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: '5px',
+              background: 'rgba(139,92,246,0.12)', border: '1.5px solid #8B5CF6',
+              color: '#8B5CF6', padding: '4px 12px', borderRadius: '20px',
+              fontSize: '0.82rem', fontWeight: 800,
+            }}>
+              <FaBrain size={12} /> Gemini LLM Active
+            </span>
+          )}
         </div>
         <h1 style={{ fontSize: '2.2rem' }}>EEG Hardware & Analysis</h1>
-        <p style={{ fontSize: '1.02rem' }}>BioAmp EXG Pill telemetry, real-time brainwave spectrum analysis, and AI Vedantic remediation</p>
+        <p style={{ fontSize: '1.02rem' }}>
+          {isLive
+            ? 'Receiving live BioAmp EXG Pill telemetry via ESP32 WiFi — real-time brainwave analysis & AI Vedantic remediation'
+            : 'BioAmp EXG Pill telemetry, real-time brainwave spectrum analysis, and AI Vedantic remediation'}
+        </p>
       </div>
 
+      {/* ── Signal Source Card ──────────────────────────────────── */}
       <div className="card" style={{ marginBottom: '2rem', padding: '1.85rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-          <h4 style={{ fontSize: '1.25rem', margin: 0 }}>Signal Source — BioAmp EEG Calibration</h4>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.98rem', fontWeight: 600, cursor: 'pointer' }}>
-            <input type="checkbox" checked={useML} onChange={(e) => setUseML(e.target.checked)} />
-            ML Gaussian Classifier
-          </label>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <h4 style={{ fontSize: '1.25rem', margin: 0 }}>
+            {isLive ? '🟢 Live ESP32 Telemetry Stream' : 'Signal Source — BioAmp EEG Calibration'}
+          </h4>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.98rem', fontWeight: 600, cursor: 'pointer' }}>
+              <input type="checkbox" checked={useML} onChange={(e) => setUseML(e.target.checked)} />
+              ML Gaussian Classifier
+            </label>
+            {llmAvailable && (
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.98rem', fontWeight: 600, cursor: 'pointer', color: '#8B5CF6' }}>
+                <input type="checkbox" checked={useLLMCalibration} onChange={(e) => setUseLLMCalibration(e.target.checked)} />
+                <FaBrain size={13} /> LLM Calibration
+              </label>
+            )}
+          </div>
         </div>
+
+        {isLive ? (
+          <div style={{
+            background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)',
+            borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1rem',
+            display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap',
+          }}>
+            <FiZap size={18} color="#10B981" />
+            <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#10B981' }}>
+              Auto-populating from ESP32 live stream — signals update every 500ms
+            </span>
+            <button className="btn btn-secondary btn-sm" onClick={reconnect} style={{ marginLeft: 'auto', fontSize: '0.85rem' }}>
+              Reconnect
+            </button>
+          </div>
+        ) : (
+          <div style={{
+            background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
+            borderRadius: '12px', padding: '0.85rem 1.25rem', marginBottom: '1rem',
+            fontSize: '0.92rem', color: '#92400E',
+          }}>
+            <FiWifiOff size={14} style={{ marginRight: '6px' }} />
+            ESP32 not connected — using manual calibration sliders. Connect your BioAmp hardware to receive live data.
+          </div>
+        )}
+
         <div className="gauges-row" style={{ gridTemplateColumns: 'repeat(4,1fr)', gap: '1.25rem' }}>
-          <SliderInput label="EEG Attention" min={0} max={100} value={signals.attention} onChange={v => updateSignal('attention', v)} />
-          <SliderInput label="Alpha Power (μV)" min={1} max={50} value={signals.alpha} onChange={v => updateSignal('alpha', v)} />
-          <SliderInput label="Beta Power (μV)" min={1} max={50} value={signals.beta} onChange={v => updateSignal('beta', v)} />
-          <SliderInput label="Theta Power (μV)" min={1} max={50} value={signals.theta} onChange={v => updateSignal('theta', v)} />
+          <SliderInput label="EEG Attention" min={0} max={100} value={signals.attention} onChange={v => updateSignal('attention', v)} disabled={isLive} />
+          <SliderInput label="Alpha Power (μV)" min={1} max={50} value={signals.alpha} onChange={v => updateSignal('alpha', v)} disabled={isLive} />
+          <SliderInput label="Beta Power (μV)" min={1} max={50} value={signals.beta} onChange={v => updateSignal('beta', v)} disabled={isLive} />
+          <SliderInput label="Theta Power (μV)" min={1} max={50} value={signals.theta} onChange={v => updateSignal('theta', v)} disabled={isLive} />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', marginTop: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
           <button className="btn btn-primary" onClick={runClassification} style={{ padding: '0.85rem 1.85rem', fontSize: '1.02rem' }}>
-            Analyze EEG Biosignals
+            {isLive ? 'Classify Live Biosignals' : 'Analyze EEG Biosignals'}
           </button>
+          {llmAvailable && classification && (
+            <button className="btn btn-secondary" onClick={fetchNeuralInsight} disabled={insightLoading} style={{ padding: '0.85rem 1.5rem', fontSize: '0.98rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <FaBrain size={14} /> {insightLoading ? 'Analyzing...' : 'AI Neural Insight'}
+            </button>
+          )}
           {savedMessage && (
             <span style={{ color: 'var(--sage)', fontWeight: 700, fontSize: '0.95rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
               <FiCheckCircle size={16} /> {savedMessage}
@@ -108,6 +258,28 @@ export default function HardwareAnalysis() {
           )}
         </div>
       </div>
+
+      {/* ── Real-Time EEG Charts (when history available) ─────── */}
+      {chartData.length > 3 && (
+        <>
+          <div className="section-label" style={{ marginBottom: '1rem' }}>REAL-TIME BRAINWAVE SPECTRUM</div>
+          <div className="card" style={{ padding: '1.5rem', marginBottom: '2.5rem' }}>
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="idx" tick={false} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid var(--border)', fontSize: '0.9rem' }} />
+                <Legend wrapperStyle={{ fontSize: '0.88rem' }} />
+                <Line type="monotone" dataKey="alpha" stroke="#10B981" strokeWidth={2} dot={false} name="Alpha (8-13Hz)" />
+                <Line type="monotone" dataKey="beta" stroke="#F59E0B" strokeWidth={2} dot={false} name="Beta (13-30Hz)" />
+                <Line type="monotone" dataKey="theta" stroke="#3B82F6" strokeWidth={2} dot={false} name="Theta (4-8Hz)" />
+                <Line type="monotone" dataKey="attention" stroke="#8B5CF6" strokeWidth={1.5} dot={false} name="Attention" strokeDasharray="5 5" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </>
+      )}
 
       <div className="section-label" style={{ marginBottom: '1rem' }}>EEG TELEMETRY METRICS</div>
       <div className="gauges-row" style={{ gap: '1.25rem', marginBottom: '2.5rem' }}>
@@ -117,6 +289,59 @@ export default function HardwareAnalysis() {
         <GaugeCard label="Theta Wave (4-8Hz)" value={signals.theta} unit="μV" />
         <GaugeCard label="Beta/Alpha Ratio" value={signals.baRatio} unit="ratio" />
       </div>
+
+      {/* ── LLM Neural Insight Panel ──────────────────────────── */}
+      {neuralInsight && (
+        <>
+          <div className="section-label" style={{ marginBottom: '1rem' }}>
+            <FaBrain size={13} style={{ marginRight: '6px' }} /> AI NEURAL ANALYSIS (GEMINI)
+          </div>
+          <div className="card" style={{ marginBottom: '2rem', padding: '1.85rem', borderLeft: '5px solid #8B5CF6', background: 'linear-gradient(135deg, rgba(139,92,246,0.06), rgba(76,114,255,0.04))' }}>
+            {neuralInsight.summary && (
+              <p style={{ fontSize: '1.05rem', lineHeight: '1.7', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                {neuralInsight.summary}
+              </p>
+            )}
+            {neuralInsight.insights && neuralInsight.insights.length > 0 && (
+              <div style={{ marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: '#8B5CF6', marginBottom: '0.5rem' }}>Key Observations</div>
+                <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.96rem', lineHeight: '1.7', color: 'var(--text-secondary)' }}>
+                  {neuralInsight.insights.map((ins, i) => <li key={i}>{ins}</li>)}
+                </ul>
+              </div>
+            )}
+            {neuralInsight.recommendations && neuralInsight.recommendations.length > 0 && (
+              <div style={{ marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: '#10B981', marginBottom: '0.5rem' }}>Recommendations</div>
+                <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.96rem', lineHeight: '1.7', color: 'var(--text-secondary)' }}>
+                  {neuralInsight.recommendations.map((rec, i) => <li key={i}>{rec}</li>)}
+                </ul>
+              </div>
+            )}
+            {neuralInsight.neuralPattern && (
+              <div style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '12px', padding: '10px 16px', fontSize: '0.94rem', color: 'var(--text-primary)' }}>
+                <strong style={{ color: '#8B5CF6' }}>Neural Pattern:</strong> {neuralInsight.neuralPattern}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ── LLM Calibration Notice ────────────────────────────── */}
+      {llmCalibration && (
+        <div style={{ background: 'rgba(139,92,246,0.08)', border: '1.5px solid rgba(139,92,246,0.3)', borderRadius: '14px', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+          <FaBrain size={18} color="#8B5CF6" style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>
+            <strong style={{ color: '#8B5CF6' }}>LLM Calibration:</strong>{' '}
+            {llmCalibration.reasoning}
+            {llmCalibration.suggestedState && llmCalibration.suggestedState !== classification?.state && (
+              <span style={{ display: 'block', marginTop: '4px', fontWeight: 700, color: '#8B5CF6' }}>
+                Suggested adjustment: {llmCalibration.suggestedState} (Confidence: {Math.round((llmCalibration.calibratedConfidence || 0.7) * 100)}%)
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {classification && (
         <>
@@ -164,6 +389,12 @@ export default function HardwareAnalysis() {
                 </div>
                 <div style={{ marginTop: '1.75rem', fontSize: '0.92rem', opacity: 0.8 }}>Beta/Alpha Spectral Ratio</div>
                 <div style={{ fontSize: '1.85rem', fontWeight: 800 }}>{signals.baRatio.toFixed(2)}</div>
+                {isLive && (
+                  <div style={{ marginTop: '1rem', fontSize: '0.82rem', opacity: 0.6, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', display: 'inline-block', animation: 'pulse 1.5s infinite' }}></span>
+                    Live stream — {history.length} readings buffered
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -271,7 +502,7 @@ export default function HardwareAnalysis() {
                     </div>
                     <hr className="divider" style={{ margin: '1.25rem 0' }} />
                     <div className="section-label" style={{ textAlign: 'left', marginBottom: '0.75rem' }}>
-                      {lang === 'hi' ? '3-चरणीय दैहिक स्थिरता अभ्यास' : lang === 'bn' ? '৩-পর্যায়ের মানসিক ও দৈহিক প্রশান্তি অনুশীলন' : lang === 'hl' ? '3-STAGE SOMATIC GROUNDING (STHIRATA ABHYAS)' : 'SOMATIC GROUNDING STEPS'}
+                      {lang === 'hi' ? '3-चरणीय दैहिक स्थिरता अभ्यास' : lang === 'bn' ? '৩-পর্যায়ের মানসিক ও দৈহিক প্রশান্তি অনুশীলন' : lang === 'hl' ? '3-STAGE SOMATIC GROUNDING (STHIRATA ABHYAS)' : 'SOMATIC GROUNDING STEPS'}
                     </div>
                     {(lang === 'hi' ? verse.groundingSteps_hi || verse.groundingSteps : lang === 'bn' ? verse.groundingSteps_bn || verse.groundingSteps : lang === 'hl' ? verse.groundingSteps_hl || verse.groundingSteps : verse.groundingSteps).map((step, i) => (
                       <div className="grounding-step" key={i} style={{ fontSize: '0.95rem', lineHeight: '1.5', gap: '0.65rem', marginBottom: '0.6rem' }}>
@@ -290,14 +521,17 @@ export default function HardwareAnalysis() {
   );
 }
 
-function SliderInput({ label, min, max, step = 1, value, onChange }) {
+function SliderInput({ label, min, max, step = 1, value, onChange, disabled = false }) {
   return (
     <div className="slider-group">
       <label style={{ fontSize: '0.95rem', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
         <span>{label}</span>
-        <span style={{ color: 'var(--primary)', fontWeight: 800 }}>{typeof value === 'number' && value % 1 !== 0 ? value.toFixed(1) : value}</span>
+        <span style={{ color: disabled ? '#10B981' : 'var(--primary)', fontWeight: 800 }}>
+          {typeof value === 'number' && value % 1 !== 0 ? value.toFixed(1) : value}
+          {disabled && <span style={{ fontSize: '0.7rem', marginLeft: '4px', opacity: 0.7 }}>LIVE</span>}
+        </span>
       </label>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(parseFloat(e.target.value))} />
+      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(parseFloat(e.target.value))} disabled={disabled} style={disabled ? { opacity: 0.5 } : {}} />
     </div>
   );
 }

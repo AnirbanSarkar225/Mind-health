@@ -91,4 +91,16 @@ export const api = {
 
   classify: (body) => request('/classify', { method: 'POST', body: JSON.stringify(body) }),
   updateClassifier: (body) => request('/classify/update', { method: 'POST', body: JSON.stringify(body) }),
+
+  // ── ESP32 Live Data ────────────────────────────────────────────────────────
+  getESP32Latest: () => request('/esp32/latest'),
+  getESP32History: (limit = 50) => request(`/esp32/history?limit=${limit}`),
+  getESP32Status: () => request('/esp32/status'),
+
+  // ── LLM (Google Gemini) ────────────────────────────────────────────────────
+  llmGenerateQuestions: (body) => request('/llm/questions', { method: 'POST', body: JSON.stringify(body) }),
+  llmAnalyze: (body) => request('/llm/analyze', { method: 'POST', body: JSON.stringify(body) }),
+  llmCalibrate: (body) => request('/llm/calibrate', { method: 'POST', body: JSON.stringify(body) }),
+  llmStatus: () => request('/llm/status'),
 };
+
