@@ -89,7 +89,7 @@ export default function Dashboard() {
                 color: '#8B5CF6', padding: '4px 10px', borderRadius: '16px',
                 fontSize: '0.78rem', fontWeight: 800,
               }}>
-                <FaBrain size={11} /> Gemini AI
+                <FaBrain size={11} /> LLM Active
               </span>
             )}
             <span style={{ fontSize: '0.88rem', color: 'var(--text-muted)', fontWeight: 600 }}>

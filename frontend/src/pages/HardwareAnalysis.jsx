@@ -140,9 +140,9 @@ export default function HardwareAnalysis() {
   };
 
   const verse = classification?.verse;
-  const statusColor = connectionStatus === 'connected' ? '#10B981' : connectionStatus === 'reconnecting' ? '#F59E0B' : '#EF4444';
-  const statusIcon = connectionStatus === 'connected' ? <FiWifi size={14} /> : <FiWifiOff size={14} />;
-  const statusText = connectionStatus === 'connected' ? 'ESP32 Live' : connectionStatus === 'reconnecting' ? 'Reconnecting...' : 'Disconnected';
+  const statusColor = isLive ? '#10B981' : connectionStatus === 'reconnecting' ? '#F59E0B' : '#94A3B8';
+  const statusIcon = isLive ? <FiWifi size={14} /> : <FiWifiOff size={14} />;
+  const statusText = isLive ? 'ESP32 Live' : connectionStatus === 'reconnecting' ? 'Reconnecting...' : 'ESP32 Standby';
 
   // Prepare chart data
   const chartData = history.slice(-60).map((r, i) => ({
@@ -179,7 +179,7 @@ export default function HardwareAnalysis() {
               color: '#8B5CF6', padding: '4px 12px', borderRadius: '20px',
               fontSize: '0.82rem', fontWeight: 800,
             }}>
-              <FaBrain size={12} /> Gemini LLM Active
+              <FaBrain size={12} /> LLM Active
             </span>
           )}
         </div>
@@ -294,7 +294,7 @@ export default function HardwareAnalysis() {
       {neuralInsight && (
         <>
           <div className="section-label" style={{ marginBottom: '1rem' }}>
-            <FaBrain size={13} style={{ marginRight: '6px' }} /> AI NEURAL ANALYSIS (GEMINI)
+            <FaBrain size={13} style={{ marginRight: '6px' }} /> AI NEURAL ANALYSIS (LLM)
           </div>
           <div className="card" style={{ marginBottom: '2rem', padding: '1.85rem', borderLeft: '5px solid #8B5CF6', background: 'linear-gradient(135deg, rgba(139,92,246,0.06), rgba(76,114,255,0.04))' }}>
             {neuralInsight.summary && (
