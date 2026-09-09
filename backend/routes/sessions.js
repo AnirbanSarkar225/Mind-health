@@ -9,7 +9,7 @@ const router = Router();
 router.post('/', authMiddleware, async (req, res) => {
   try {
     const {
-      bpm = 0, hrv = 0,
+      bpm = 0, hrv = 0, spo2 = 0,
       attention = 50, meditation = 50,
       alpha = 15, beta = 10, theta = 10,
       baRatio = 0.67,
@@ -20,9 +20,9 @@ router.post('/', authMiddleware, async (req, res) => {
     const sessId = uuidv4();
     await query(
       `INSERT INTO sessions 
-       (id, user_id, bpm, hrv_sdnn, eeg_attention, eeg_meditation, alpha_power, beta_power, theta_power, beta_alpha_ratio, detected_state, classifier_method, confidence, mood_snapshot)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [sessId, req.user.id, bpm, hrv, attention, meditation, alpha, beta, theta, baRatio, state, method, confidence, moodSnapshot || null]
+       (id, user_id, bpm, spo2, hrv_sdnn, eeg_attention, eeg_meditation, alpha_power, beta_power, theta_power, beta_alpha_ratio, detected_state, classifier_method, confidence, mood_snapshot)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [sessId, req.user.id, bpm, spo2, hrv, attention, meditation, alpha, beta, theta, baRatio, state, method, confidence, moodSnapshot || null]
     );
 
     res.status(201).json({ id: sessId, message: 'Session saved.' });

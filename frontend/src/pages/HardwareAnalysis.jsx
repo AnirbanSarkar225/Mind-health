@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import useESP32Data from '../hooks/useESP32Data';
-import { FiActivity, FiClock, FiCheckCircle, FiArrowLeft, FiWifi, FiWifiOff, FiCpu, FiZap } from 'react-icons/fi';
-import { FaWaveSquare, FaBrain } from 'react-icons/fa6';
+import { FiActivity, FiClock, FiCheckCircle, FiArrowLeft, FiWifi, FiWifiOff, FiCpu, FiZap, FiHeart, FiDroplet } from 'react-icons/fi';
+import { FaWaveSquare, FaBrain, FaHeartPulse } from 'react-icons/fa6';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const BAR_COLORS = ['var(--red-soft)', 'var(--blue-soft)', 'var(--amber-soft)', 'var(--green-soft)'];
@@ -15,14 +15,20 @@ export default function HardwareAnalysis() {
   // ── Live ESP32 data via WebSocket ────────────────────────────────────────
   const { latestData, classification: liveClassification, history, connectionStatus, isLive, reconnect } = useESP32Data({ maxHistory: 120 });
 
-  // ── Manual signals (fallback when ESP32 not connected) ───────────────────
+  // ── Signals (starts clean at 0, only live numbers displayed) ──────────────
   const [signals, setSignals] = useState({
-    attention: 50,
-    meditation: 50,
-    alpha: 15,
-    beta: 10,
-    theta: 12,
-    baRatio: 0.67,
+    attention: 0,
+    meditation: 0,
+    alpha: 0,
+    beta: 0,
+    theta: 0,
+    baRatio: 0,
+    bpm: 0,
+    spo2: 0,
+    hrv_sdnn: 0,
+    finger: 0,
+    measuring: 0,
+    ready: 0,
   });
   const [classification, setClassification] = useState(null);
   const [useML, setUseML] = useState(true);
@@ -43,16 +49,22 @@ export default function HardwareAnalysis() {
       .catch(() => setLlmAvailable(false));
   }, []);
 
-  // Auto-populate signals from live ESP32 data
+  // Auto-populate signals from live ESP32 data (pure live numbers, zero stock defaults)
   useEffect(() => {
     if (isLive && latestData) {
       setSignals({
-        attention: latestData.attention ?? 50,
-        meditation: latestData.meditation ?? 50,
-        alpha: latestData.alpha ?? 15,
-        beta: latestData.beta ?? 10,
-        theta: latestData.theta ?? 12,
-        baRatio: latestData.ba_ratio ?? 0.67,
+        attention: latestData.attention ?? 0,
+        meditation: latestData.meditation ?? 0,
+        alpha: latestData.alpha ?? 0,
+        beta: latestData.beta ?? 0,
+        theta: latestData.theta ?? 0,
+        baRatio: latestData.ba_ratio ?? 0,
+        bpm: latestData.bpm ?? 0,
+        spo2: latestData.spo2 ?? 0,
+        hrv_sdnn: latestData.hrv_sdnn ?? 0,
+        finger: latestData.finger ?? 0,
+        measuring: latestData.measuring ?? 0,
+        ready: latestData.ready ?? 0,
       });
     }
   }, [isLive, latestData]);
@@ -61,8 +73,10 @@ export default function HardwareAnalysis() {
   useEffect(() => {
     if (liveClassification) {
       setClassification(liveClassification);
+    } else if (isLive) {
+      setClassification(null);
     }
-  }, [liveClassification]);
+  }, [liveClassification, isLive]);
 
   const updateSignal = (key, val) => {
     setSignals(prev => {
@@ -102,6 +116,8 @@ export default function HardwareAnalysis() {
       }
 
       await api.saveSessions({
+        bpm: signals.bpm || 0,
+        spo2: signals.spo2 || 0,
         attention: signals.attention,
         meditation: signals.meditation,
         alpha: signals.alpha,
@@ -109,17 +125,17 @@ export default function HardwareAnalysis() {
         theta: signals.theta,
         baRatio: signals.baRatio,
         state: result.state,
-        method: isLive ? 'BioAmp Live Stream' : (result.method || 'BioAmp Hardware Stream'),
+        method: isLive ? 'BioAmp + MAX30102 Live Telemetry' : (result.method || 'BioAmp Hardware Stream'),
         confidence: Math.min(0.80, result.confidence || 0.80),
       });
-      setSavedMessage(isLive ? 'Live ESP32 sensor recording saved' : 'Hardware sensor recording saved to session history');
+      setSavedMessage(isLive ? 'Live ESP32 EEG & SpO2 recording saved' : 'Hardware sensor recording saved to session history');
       setTimeout(() => setSavedMessage(''), 4000);
     } catch (e) {
       console.error(e);
     }
   };
 
-  // Fetch LLM neural insight
+  // Fetch LLM neural & cardiovascular insight
   const fetchNeuralInsight = async () => {
     if (!llmAvailable) return;
     setInsightLoading(true);
@@ -128,7 +144,7 @@ export default function HardwareAnalysis() {
         signals,
         answers: {},
         state: classification?.state || 'unknown',
-        description: `Live EEG reading - Attention: ${signals.attention}, Meditation: ${signals.meditation}, Alpha: ${signals.alpha}μV, Beta: ${signals.beta}μV, Theta: ${signals.theta}μV, B/A Ratio: ${signals.baRatio}`,
+        description: `Live Biosignal reading - Heart Rate: ${signals.bpm ? `${signals.bpm} BPM` : 'N/A'}, SpO2: ${signals.spo2 ? `${signals.spo2}%` : 'N/A'}, Attention: ${signals.attention}, Meditation: ${signals.meditation}, Alpha: ${signals.alpha}μV, Beta: ${signals.beta}μV, Theta: ${signals.theta}μV, B/A Ratio: ${signals.baRatio}`,
       });
       if (res && !res.fallback) {
         setNeuralInsight(res);
@@ -151,10 +167,64 @@ export default function HardwareAnalysis() {
     beta: r.beta?.toFixed(1) ?? 0,
     theta: r.theta?.toFixed(1) ?? 0,
     attention: r.attention?.toFixed(0) ?? 0,
+    bpm: r.bpm && r.bpm > 0 ? Number(r.bpm.toFixed(0)) : null,
+    spo2: r.spo2 && r.spo2 > 0 ? Number(r.spo2.toFixed(0)) : null,
   }));
+
+  // Cardiovascular qualitative status based on live ESP32 hardware state
+  const getBpmStatus = (bpm, finger, measuring) => {
+    if (!finger || finger === 0) return { text: 'Place finger on MAX30102', color: 'var(--text-muted)' };
+    if (measuring === 1) return { text: 'Measuring... Keep finger still', color: '#F59E0B' };
+    if (!bpm || bpm <= 0) return { text: 'Acquiring pulse waveform...', color: '#3B82F6' };
+    if (bpm < 60) return { text: 'Resting Bradycardia (<60 BPM)', color: '#3B82F6' };
+    if (bpm <= 100) return { text: 'Normal Resting Pulse (60–100 BPM)', color: '#10B981' };
+    return { text: 'Elevated Pulse / Tachycardia (>100 BPM)', color: '#EF4444' };
+  };
+
+  const getSpo2Status = (spo2, finger, measuring) => {
+    if (!finger || finger === 0) return { text: 'Waiting for finger contact', color: 'var(--text-muted)' };
+    if (measuring === 1) return { text: 'Analyzing optical absorption...', color: '#F59E0B' };
+    if (!spo2 || spo2 <= 0) return { text: 'Calculating SpO2 saturation...', color: '#3B82F6' };
+    if (spo2 >= 95) return { text: 'Optimal Oxygenation (95–100%)', color: '#10B981' };
+    if (spo2 >= 90) return { text: 'Mild Hypoxia (90–94%)', color: '#F59E0B' };
+    return { text: 'Hypoxia Alert (<90%)', color: '#EF4444' };
+  };
+
+  const getHrvStatus = (hrv, finger, measuring) => {
+    if (!finger || finger === 0) return { text: 'Awaiting sensor contact', color: 'var(--text-muted)' };
+    if (measuring === 1) return { text: 'Sampling beat intervals...', color: '#F59E0B' };
+    if (!hrv || hrv <= 0) return { text: 'Accumulating pulse intervals...', color: '#3B82F6' };
+    if (hrv >= 50) return { text: 'Healthy HRV (High Vagal Tone)', color: '#10B981' };
+    if (hrv >= 30) return { text: 'Moderate Autonomic Tone', color: '#F59E0B' };
+    return { text: 'Low HRV / Sympathetic Dominance', color: '#EF4444' };
+  };
+
+  const bpmInfo = getBpmStatus(signals.bpm, signals.finger, signals.measuring);
+  const spo2Info = getSpo2Status(signals.spo2, signals.finger, signals.measuring);
+  const hrvInfo = getHrvStatus(signals.hrv_sdnn, signals.finger, signals.measuring);
+
+  // BioAmp noise detection: when BioAmp EXG is NOT connected, GPIO 34 reads floating ADC noise.
+  // Noise signature: beta dominates (>70%), attention pegged at 100, alpha + theta very low.
+  // This flag warns the user that EEG values are from electrical noise, not brain signals.
+  const bioampNoise = isLive && signals.beta > 70 && signals.attention >= 100 && signals.alpha < 15;
 
   return (
     <>
+      <style>{`
+        @keyframes pulseHeart {
+          0% { transform: scale(1); }
+          15% { transform: scale(1.22); }
+          30% { transform: scale(1); }
+          45% { transform: scale(1.15); }
+          60% { transform: scale(1); }
+          100% { transform: scale(1); }
+        }
+        .heart-pulsing {
+          animation: pulseHeart 1.1s infinite;
+          display: inline-block;
+        }
+      `}</style>
+
       <button className="back-to-dash" onClick={() => navigate('/')}>
         <FiArrowLeft size={16} /> Back to Dashboard
       </button>
@@ -183,11 +253,11 @@ export default function HardwareAnalysis() {
             </span>
           )}
         </div>
-        <h1 style={{ fontSize: '2.2rem' }}>EEG Hardware & Analysis</h1>
+        <h1 style={{ fontSize: '2.2rem' }}>Multi-Modal Hardware Telemetry</h1>
         <p style={{ fontSize: '1.02rem' }}>
           {isLive
-            ? 'Receiving live BioAmp EXG Pill telemetry via ESP32 WiFi — real-time brainwave analysis & AI Vedantic remediation'
-            : 'BioAmp EXG Pill telemetry, real-time brainwave spectrum analysis, and AI Vedantic remediation'}
+            ? 'Streaming live BioAmp EXG EEG & MAX30102 SpO2/Heart Rate telemetry via ESP32 WiFi'
+            : 'BioAmp EXG EEG spectrum & MAX30102 Pulse Oximetry calibration with Vedantic remediation'}
         </p>
       </div>
 
@@ -195,7 +265,7 @@ export default function HardwareAnalysis() {
       <div className="card" style={{ marginBottom: '2rem', padding: '1.85rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <h4 style={{ fontSize: '1.25rem', margin: 0 }}>
-            {isLive ? '🟢 Live ESP32 Telemetry Stream' : 'Signal Source — BioAmp EEG Calibration'}
+            {isLive ? '🟢 Live ESP32 Telemetry Stream (EEG + SpO2)' : 'Signal Source — BioAmp EEG & Pulse Calibration'}
           </h4>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.98rem', fontWeight: 600, cursor: 'pointer' }}>
@@ -219,7 +289,7 @@ export default function HardwareAnalysis() {
           }}>
             <FiZap size={18} color="#10B981" />
             <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#10B981' }}>
-              Auto-populating from ESP32 live stream — signals update every 500ms
+              Auto-populating from ESP32 live stream — EEG & SpO2 updates every 500ms
             </span>
             <button className="btn btn-secondary btn-sm" onClick={reconnect} style={{ marginLeft: 'auto', fontSize: '0.85rem' }}>
               Reconnect
@@ -232,19 +302,34 @@ export default function HardwareAnalysis() {
             fontSize: '0.92rem', color: '#92400E',
           }}>
             <FiWifiOff size={14} style={{ marginRight: '6px' }} />
-            ESP32 not connected — using manual calibration sliders. Connect your BioAmp hardware to receive live data.
+            ESP32 in standby — using manual calibration sliders. Connect your BioAmp & MAX30102 hardware to stream live telemetry.
           </div>
         )}
 
-        <div className="gauges-row" style={{ gridTemplateColumns: 'repeat(4,1fr)', gap: '1.25rem' }}>
-          <SliderInput label="EEG Attention" min={0} max={100} value={signals.attention} onChange={v => updateSignal('attention', v)} disabled={isLive} />
-          <SliderInput label="Alpha Power (μV)" min={1} max={50} value={signals.alpha} onChange={v => updateSignal('alpha', v)} disabled={isLive} />
-          <SliderInput label="Beta Power (μV)" min={1} max={50} value={signals.beta} onChange={v => updateSignal('beta', v)} disabled={isLive} />
-          <SliderInput label="Theta Power (μV)" min={1} max={50} value={signals.theta} onChange={v => updateSignal('theta', v)} disabled={isLive} />
+        {/* ── EEG Calibration Sliders ── */}
+        <div style={{ fontSize: '0.86rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.65rem' }}>
+          Brainwave Spectrum Calibration
         </div>
+        <div className="gauges-row" style={{ gridTemplateColumns: 'repeat(4,1fr)', gap: '1.25rem', marginBottom: '1.5rem' }}>
+          <SliderInput label="EEG Attention" min={0} max={100} value={signals.attention} onChange={v => updateSignal('attention', v)} disabled={isLive} />
+          <SliderInput label="Alpha Wave" min={0} max={100} value={signals.alpha} onChange={v => updateSignal('alpha', v)} disabled={isLive} />
+          <SliderInput label="Beta Wave" min={0} max={100} value={signals.beta} onChange={v => updateSignal('beta', v)} disabled={isLive} />
+          <SliderInput label="Theta Wave" min={0} max={100} value={signals.theta} onChange={v => updateSignal('theta', v)} disabled={isLive} />
+        </div>
+
+        {/* ── Pulse, SpO2 & HRV Sliders (Manual standby mode) ── */}
+        <div style={{ fontSize: '0.86rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.65rem' }}>
+          Cardiovascular & Oxygenation Calibration
+        </div>
+        <div className="gauges-row" style={{ gridTemplateColumns: 'repeat(3,1fr)', gap: '1.25rem', marginBottom: '1rem' }}>
+          <SliderInput label="Heart Rate (BPM)" min={0} max={200} value={signals.bpm} onChange={v => updateSignal('bpm', v)} disabled={isLive} />
+          <SliderInput label="Blood Oxygen SpO2 (%)" min={0} max={100} value={signals.spo2} onChange={v => updateSignal('spo2', v)} disabled={isLive} />
+          <SliderInput label="HRV SDNN (ms)" min={0} max={150} value={signals.hrv_sdnn} onChange={v => updateSignal('hrv_sdnn', v)} disabled={isLive} />
+        </div>
+
         <div style={{ display: 'flex', alignItems: 'center', marginTop: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
           <button className="btn btn-primary" onClick={runClassification} style={{ padding: '0.85rem 1.85rem', fontSize: '1.02rem' }}>
-            {isLive ? 'Classify Live Biosignals' : 'Analyze EEG Biosignals'}
+            {isLive ? 'Classify Live Biosignals' : 'Analyze Multi-Modal Biosignals'}
           </button>
           {llmAvailable && classification && (
             <button className="btn btn-secondary" onClick={fetchNeuralInsight} disabled={insightLoading} style={{ padding: '0.85rem 1.5rem', fontSize: '0.98rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -259,10 +344,130 @@ export default function HardwareAnalysis() {
         </div>
       </div>
 
-      {/* ── Real-Time EEG Charts (when history available) ─────── */}
+      {/* ── Cardiovascular & SpO2 Telemetry Cards ────────────── */}
+      <div className="section-label" style={{ marginBottom: '1rem' }}>
+        <FaHeartPulse size={14} style={{ marginRight: '6px', color: '#EF4444' }} />
+        CARDIOVASCULAR & PULSE OXIMETRY (MAX30102)
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
+        {/* Heart Rate Card */}
+        <div className="card" style={{ padding: '1.75rem', borderLeft: '5px solid #EF4444', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <span style={{ fontSize: '0.84rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>
+                Heart Rate / Pulse
+              </span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '4px' }}>
+                <span style={{ fontSize: '2.8rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
+                  {signals.bpm && signals.bpm > 0 ? signals.bpm : '--'}
+                </span>
+                <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-secondary)' }}>BPM</span>
+              </div>
+            </div>
+            <div style={{
+              width: 52, height: 52, borderRadius: '14px',
+              background: 'rgba(239,68,68,0.12)', color: '#EF4444',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <FaHeartPulse size={26} className={signals.bpm > 0 ? 'heart-pulsing' : ''} />
+            </div>
+          </div>
+          <div style={{
+            marginTop: '1.25rem', padding: '8px 12px', borderRadius: '10px',
+            background: 'var(--bg-subtle)', border: '1px solid var(--border)',
+            fontSize: '0.92rem', fontWeight: 700, color: bpmInfo.color,
+            display: 'flex', alignItems: 'center', gap: '8px'
+          }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: bpmInfo.color, display: 'inline-block' }}></span>
+            {bpmInfo.text}
+          </div>
+        </div>
+
+        {/* SpO2 Card */}
+        <div className="card" style={{ padding: '1.75rem', borderLeft: '5px solid #0EA5E9', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <span style={{ fontSize: '0.84rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>
+                Blood Oxygen Saturation
+              </span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '4px' }}>
+                <span style={{ fontSize: '2.8rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
+                  {signals.spo2 && signals.spo2 > 0 ? `${signals.spo2}` : '--'}
+                </span>
+                <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-secondary)' }}>% SpO₂</span>
+              </div>
+            </div>
+            <div style={{
+              width: 52, height: 52, borderRadius: '14px',
+              background: 'rgba(14,165,233,0.12)', color: '#0EA5E9',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <FiDroplet size={26} />
+            </div>
+          </div>
+          <div style={{
+            marginTop: '1.25rem', padding: '8px 12px', borderRadius: '10px',
+            background: 'var(--bg-subtle)', border: '1px solid var(--border)',
+            fontSize: '0.92rem', fontWeight: 700, color: spo2Info.color,
+            display: 'flex', alignItems: 'center', gap: '8px'
+          }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: spo2Info.color, display: 'inline-block' }}></span>
+            {spo2Info.text}
+          </div>
+        </div>
+
+        {/* HRV SDNN Card */}
+        <div className="card" style={{ padding: '1.75rem', borderLeft: '5px solid #8B5CF6', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <span style={{ fontSize: '0.84rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>
+                Heart Rate Variability (HRV)
+              </span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '4px' }}>
+                <span style={{ fontSize: '2.8rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
+                  {signals.hrv_sdnn && signals.hrv_sdnn > 0 ? Math.round(signals.hrv_sdnn) : '--'}
+                </span>
+                <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-secondary)' }}>ms SDNN</span>
+              </div>
+            </div>
+            <div style={{
+              width: 52, height: 52, borderRadius: '14px',
+              background: 'rgba(139,92,246,0.12)', color: '#8B5CF6',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <FiActivity size={26} />
+            </div>
+          </div>
+          <div style={{
+            marginTop: '1.25rem', padding: '8px 12px', borderRadius: '10px',
+            background: 'var(--bg-subtle)', border: '1px solid var(--border)',
+            fontSize: '0.92rem', fontWeight: 700, color: hrvInfo.color,
+            display: 'flex', alignItems: 'center', gap: '8px'
+          }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: hrvInfo.color, display: 'inline-block' }}></span>
+            {hrvInfo.text}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Real-Time EEG & Pulse Spectrum Charts ─────── */}
       {chartData.length > 3 && (
         <>
-          <div className="section-label" style={{ marginBottom: '1rem' }}>REAL-TIME BRAINWAVE SPECTRUM</div>
+          <div className="section-label" style={{ marginBottom: '1rem' }}>REAL-TIME MULTI-MODAL TELEMETRY GRAPH</div>
+          {bioampNoise && (
+            <div style={{
+              background: 'rgba(245,158,11,0.1)', border: '1.5px solid rgba(245,158,11,0.4)',
+              borderRadius: '12px', padding: '0.85rem 1.25rem', marginBottom: '1rem',
+              fontSize: '0.92rem', color: '#92400E', display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+            }}>
+              <FiCpu size={18} color="#F59E0B" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <strong>BioAmp EXG Not Connected</strong> — EEG readings are from ADC noise on GPIO 34 (floating pin).
+                Beta dominance (~{signals.beta.toFixed(0)}%) and Attention pegged at 100 are characteristic of electrical noise, not brain signals.
+                Connect BioAmp EXG electrodes to GPIO 34 for real EEG data.
+              </div>
+            </div>
+          )}
           <div className="card" style={{ padding: '1.5rem', marginBottom: '2.5rem' }}>
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
@@ -271,22 +476,31 @@ export default function HardwareAnalysis() {
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid var(--border)', fontSize: '0.9rem' }} />
                 <Legend wrapperStyle={{ fontSize: '0.88rem' }} />
-                <Line type="monotone" dataKey="alpha" stroke="#10B981" strokeWidth={2} dot={false} name="Alpha (8-13Hz)" />
-                <Line type="monotone" dataKey="beta" stroke="#F59E0B" strokeWidth={2} dot={false} name="Beta (13-30Hz)" />
-                <Line type="monotone" dataKey="theta" stroke="#3B82F6" strokeWidth={2} dot={false} name="Theta (4-8Hz)" />
-                <Line type="monotone" dataKey="attention" stroke="#8B5CF6" strokeWidth={1.5} dot={false} name="Attention" strokeDasharray="5 5" />
+                <Line type="monotone" dataKey="alpha" stroke="#10B981" strokeWidth={2} dot={false} name="Alpha Wave (8-13Hz)" />
+                <Line type="monotone" dataKey="beta" stroke="#F59E0B" strokeWidth={2} dot={false} name="Beta Wave (13-30Hz)" />
+                <Line type="monotone" dataKey="theta" stroke="#3B82F6" strokeWidth={2} dot={false} name="Theta Wave (4-8Hz)" />
+                <Line type="monotone" dataKey="attention" stroke="#8B5CF6" strokeWidth={1.5} dot={false} name="EEG Attention" strokeDasharray="5 5" />
+                <Line type="monotone" dataKey="bpm" stroke="#EF4444" strokeWidth={2} dot={false} name="Heart Rate (BPM)" connectNulls={true} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </>
       )}
 
-      <div className="section-label" style={{ marginBottom: '1rem' }}>EEG TELEMETRY METRICS</div>
+      {/* ── EEG Band Gauges ── */}
+      <div className="section-label" style={{ marginBottom: '1rem' }}>
+        EEG TELEMETRY METRICS
+        {bioampNoise && (
+          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#F59E0B', marginLeft: '10px', textTransform: 'none', letterSpacing: 0 }}>
+            ⚠ ADC Noise — BioAmp EXG not connected
+          </span>
+        )}
+      </div>
       <div className="gauges-row" style={{ gap: '1.25rem', marginBottom: '2.5rem' }}>
         <GaugeCard label="EEG Attention" value={signals.attention} unit="/100" />
-        <GaugeCard label="Alpha Wave (8-13Hz)" value={signals.alpha} unit="μV" />
-        <GaugeCard label="Beta Wave (13-30Hz)" value={signals.beta} unit="μV" />
-        <GaugeCard label="Theta Wave (4-8Hz)" value={signals.theta} unit="μV" />
+        <GaugeCard label="Alpha Wave (8-13Hz)" value={signals.alpha} unit="%" />
+        <GaugeCard label="Beta Wave (13-30Hz)" value={signals.beta} unit="%" />
+        <GaugeCard label="Theta Wave (4-8Hz)" value={signals.theta} unit="%" />
         <GaugeCard label="Beta/Alpha Ratio" value={signals.baRatio} unit="ratio" />
       </div>
 
@@ -320,7 +534,7 @@ export default function HardwareAnalysis() {
             )}
             {neuralInsight.neuralPattern && (
               <div style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '12px', padding: '10px 16px', fontSize: '0.94rem', color: 'var(--text-primary)' }}>
-                <strong style={{ color: '#8B5CF6' }}>Neural Pattern:</strong> {neuralInsight.neuralPattern}
+                <strong style={{ color: '#8B5CF6' }}>Physiological Pattern:</strong> {neuralInsight.neuralPattern}
               </div>
             )}
           </div>
@@ -343,7 +557,7 @@ export default function HardwareAnalysis() {
         </div>
       )}
 
-      {classification && (
+      {classification ? (
         <>
           <div className="section-label" style={{ marginTop: '1.5rem', marginBottom: '1rem' }}>ASSESSMENT & CLASSIFICATION</div>
           <div className="grid-2" style={{ gap: '2rem', marginBottom: '2rem' }}>
@@ -378,20 +592,22 @@ export default function HardwareAnalysis() {
               ))}
             </div>
             <div>
-              <div className="section-label" style={{ marginBottom: '1rem' }}>LIVE EEG SPECTRAL DENSITY</div>
+              <div className="section-label" style={{ marginBottom: '1rem' }}>LIVE MULTI-MODAL SPECTRAL DENSITY</div>
               <div className="card" style={{ background: '#1B1B2D', color: '#fff', padding: '1.85rem', borderRadius: 'var(--radius-lg)', minHeight: 220 }}>
-                <div style={{ fontSize: '0.95rem', opacity: 0.8, marginBottom: '0.75rem', fontWeight: 600 }}>BioAmp Frontal EEG Bands</div>
+                <div style={{ fontSize: '0.95rem', opacity: 0.8, marginBottom: '0.75rem', fontWeight: 600 }}>Frontal EEG & Pulse Telemetry</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', fontSize: '1rem', marginTop: '1rem' }}>
-                  <div><span style={{color:'var(--green-soft)'}}>●</span> Alpha (8-13 Hz): <strong>{signals.alpha} μV</strong></div>
-                  <div><span style={{color:'var(--amber-soft)'}}>●</span> Beta (13-30 Hz): <strong>{signals.beta} μV</strong></div>
-                  <div><span style={{color:'var(--blue-soft)'}}>●</span> Theta (4-8 Hz): <strong>{signals.theta} μV</strong></div>
-                  <div><span style={{color:'var(--primary)'}}>●</span> Sampling: <strong>256 Hz</strong></div>
+                  <div><span style={{color:'var(--green-soft)'}}>●</span> Alpha (8-13 Hz): <strong>{signals.alpha}%</strong></div>
+                  <div><span style={{color:'var(--amber-soft)'}}>●</span> Beta (13-30 Hz): <strong>{signals.beta}%</strong></div>
+                  <div><span style={{color:'var(--blue-soft)'}}>●</span> Theta (4-8 Hz): <strong>{signals.theta}%</strong></div>
+                  <div><span style={{color:'#EF4444'}}>●</span> Heart Rate: <strong>{signals.bpm > 0 ? `${signals.bpm} BPM` : '--'}</strong></div>
+                  <div><span style={{color:'#0EA5E9'}}>●</span> SpO2 Oxygen: <strong>{signals.spo2 > 0 ? `${signals.spo2}%` : '--'}</strong></div>
+                  <div><span style={{color:'#8B5CF6'}}>●</span> HRV SDNN: <strong>{signals.hrv_sdnn > 0 ? `${Math.round(signals.hrv_sdnn)} ms` : '--'}</strong></div>
                 </div>
                 <div style={{ marginTop: '1.75rem', fontSize: '0.92rem', opacity: 0.8 }}>Beta/Alpha Spectral Ratio</div>
                 <div style={{ fontSize: '1.85rem', fontWeight: 800 }}>{signals.baRatio.toFixed(2)}</div>
                 {isLive && (
                   <div style={{ marginTop: '1rem', fontSize: '0.82rem', opacity: 0.6, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', display: 'inline-block', animation: 'pulse 1.5s infinite' }}></span>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', display: 'inline-block' }}></span>
                     Live stream — {history.length} readings buffered
                   </div>
                 )}
@@ -516,6 +732,18 @@ export default function HardwareAnalysis() {
             </>
           )}
         </>
+      ) : (
+        <div className="card" style={{ padding: '2.5rem 1.5rem', textAlign: 'center', marginTop: '1.5rem', marginBottom: '2.5rem', border: '1.5px dashed var(--border)', background: 'var(--bg-subtle)', borderRadius: '16px' }}>
+          <FaBrain size={38} style={{ color: 'var(--text-muted)', marginBottom: '0.85rem' }} />
+          <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.3rem', color: 'var(--text-primary)', fontWeight: 800 }}>
+            {isLive ? 'Awaiting Live Biosignal Stream' : 'Awaiting Biosignal Assessment'}
+          </h3>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.98rem', maxWidth: '560px', marginInline: 'auto', lineHeight: '1.6' }}>
+            {isLive
+              ? 'ESP32 telemetry stream connected. Place your finger on the MAX30102 sensor and connect BioAmp EXG electrodes (GPIO 34). Assessment and Gita guidance will display automatically when signals arrive.'
+              : 'All biosignals currently start at 0. Adjust the calibration sliders above and click "Analyze Multi-Modal Biosignals", or stream live numbers directly from your ESP32.'}
+          </p>
+        </div>
       )}
     </>
   );

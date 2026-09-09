@@ -83,19 +83,20 @@ export default function Account() {
         sess.eeg_meditation?.toFixed?.(1) ?? sess.eeg_meditation,
         sess.alpha_power?.toFixed?.(1) ?? sess.alpha_power,
         sess.beta_power?.toFixed?.(1) ?? sess.beta_power,
-        sess.theta_power?.toFixed?.(1) ?? sess.theta_power,
         sess.beta_alpha_ratio?.toFixed?.(2) ?? sess.beta_alpha_ratio,
+        sess.bpm && sess.bpm > 0 ? `${sess.bpm}` : '—',
+        sess.spo2 && sess.spo2 > 0 ? `${sess.spo2}%` : '—',
         sess.detected_state,
         `${((sess.confidence || 0) * 100).toFixed(0)}%`,
       ]);
 
       if (tableRows.length === 0) {
-        tableRows.push(['No sessions recorded yet', '-', '-', '-', '-', '-', '-', '-', '-']);
+        tableRows.push(['No sessions recorded yet', '-', '-', '-', '-', '-', '-', '-', '-', '-']);
       }
 
       autoTable(doc, {
         startY: 67,
-        head: [['Date & Time', 'Att', 'Med', 'Alpha', 'Beta', 'Theta', 'B/A', 'Detected State', 'Conf']],
+        head: [['Date & Time', 'Att', 'Med', 'Alpha', 'Beta', 'B/A', 'BPM', 'SpO2', 'Detected State', 'Conf']],
         body: tableRows,
         theme: 'striped',
         headStyles: {

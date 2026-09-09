@@ -189,7 +189,7 @@ export default function SessionHistory() {
   sessions.forEach(s => { dist[s.detected_state] = (dist[s.detected_state] || 0) + 1; });
 
   const exportCSV = () => {
-    const headers = 'Date,Session_Type,Attention,Alpha,Beta,Theta,BA_Ratio,State,Method,Confidence,Problem_Description\n';
+    const headers = 'Date,Session_Type,Attention,Alpha,Beta,Theta,BA_Ratio,BPM,SpO2,State,Method,Confidence,Problem_Description\n';
     const rows = sessions.map(s => {
       const isSelf = s.classifier_method?.toLowerCase().includes('self');
       const type = isSelf ? 'Cognitive Self-Assessment' : 'BioAmp Hardware Stream';
@@ -198,8 +198,10 @@ export default function SessionHistory() {
       const b = isSelf ? 'N/A' : s.beta_power;
       const th = isSelf ? 'N/A' : s.theta_power;
       const bar = isSelf ? 'N/A' : s.beta_alpha_ratio;
+      const bpm = s.bpm > 0 ? s.bpm : 'N/A';
+      const spo2 = s.spo2 > 0 ? s.spo2 : 'N/A';
       const desc = `"${(s.problem_description || s.feedback_notes || '').replace(/"/g, '""')}"`;
-      return `${new Date(s.created_at).toISOString()},${type},${att},${a},${b},${th},${bar},${s.detected_state},${s.classifier_method},${s.confidence},${desc}`;
+      return `${new Date(s.created_at).toISOString()},${type},${att},${a},${b},${th},${bar},${bpm},${spo2},${s.detected_state},${s.classifier_method},${s.confidence},${desc}`;
     }).join('\n');
 
     const blob = new Blob([headers + rows], { type: 'text/csv' });
@@ -563,17 +565,29 @@ export default function SessionHistory() {
                       <div className="metric-value" style={{ fontSize: '1.65rem' }}>{selectedSession.eeg_attention?.toFixed?.(1) ?? selectedSession.eeg_attention}/100</div>
                     </div>
                     <div className="metric-card" style={{ padding: '1.25rem' }}>
-                      <div className="metric-label" style={{ fontSize: '0.84rem' }}>Alpha Power (8-13Hz)</div>
+                      <div className="metric-label" style={{ fontSize: '0.84rem' }}>Alpha Wave (8-13Hz)</div>
                       <div className="metric-value" style={{ color: 'var(--sage)', fontSize: '1.65rem' }}>{selectedSession.alpha_power?.toFixed?.(1) ?? selectedSession.alpha_power} μV</div>
                     </div>
                     <div className="metric-card" style={{ padding: '1.25rem' }}>
-                      <div className="metric-label" style={{ fontSize: '0.84rem' }}>Beta Power (13-30Hz)</div>
+                      <div className="metric-label" style={{ fontSize: '0.84rem' }}>Beta Wave (13-30Hz)</div>
                       <div className="metric-value" style={{ color: 'var(--accent)', fontSize: '1.65rem' }}>{selectedSession.beta_power?.toFixed?.(1) ?? selectedSession.beta_power} μV</div>
                     </div>
                     <div className="metric-card" style={{ padding: '1.25rem' }}>
                       <div className="metric-label" style={{ fontSize: '0.84rem' }}>Beta/Alpha Ratio (BAR)</div>
                       <div className="metric-value" style={{ fontSize: '1.65rem' }}>{selectedSession.beta_alpha_ratio?.toFixed?.(2) ?? selectedSession.beta_alpha_ratio}</div>
                     </div>
+                    {selectedSession.bpm > 0 && (
+                      <div className="metric-card" style={{ padding: '1.25rem' }}>
+                        <div className="metric-label" style={{ fontSize: '0.84rem', color: '#EF4444' }}>Heart Rate (Pulse)</div>
+                        <div className="metric-value" style={{ color: '#EF4444', fontSize: '1.65rem' }}>{selectedSession.bpm} BPM</div>
+                      </div>
+                    )}
+                    {selectedSession.spo2 > 0 && (
+                      <div className="metric-card" style={{ padding: '1.25rem' }}>
+                        <div className="metric-label" style={{ fontSize: '0.84rem', color: '#0EA5E9' }}>Blood Oxygen (SpO2)</div>
+                        <div className="metric-value" style={{ color: '#0EA5E9', fontSize: '1.65rem' }}>{selectedSession.spo2}%</div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

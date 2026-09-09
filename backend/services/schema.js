@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     id                  TEXT PRIMARY KEY,
     user_id             TEXT NOT NULL,
     bpm                 REAL DEFAULT 0,
+    spo2                REAL DEFAULT 0,
     hrv_sdnn            REAL DEFAULT 0,
     eeg_attention       REAL DEFAULT 50,
     eeg_meditation      REAL DEFAULT 50,
@@ -115,6 +116,13 @@ export async function createTables() {
   // Migration: add mood_snapshot column to existing sessions table
   try {
     await query('ALTER TABLE sessions ADD COLUMN mood_snapshot TEXT');
+  } catch (err) {
+    // Column already exists — safe to ignore
+  }
+
+  // Migration: add spo2 column to existing sessions table
+  try {
+    await query('ALTER TABLE sessions ADD COLUMN spo2 REAL DEFAULT 0');
   } catch (err) {
     // Column already exists — safe to ignore
   }

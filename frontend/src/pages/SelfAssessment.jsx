@@ -825,6 +825,8 @@ export default function SelfAssessment() {
       const combinedNotes = `Description: ${description} | Q&A: ${Object.entries(answers).map(([k, v]) => `${k}:${v}`).join('; ')} | Other: ${additionalNotes}`;
 
       const sessRes = await api.saveSessions({
+        bpm: esp32Data?.bpm ?? 0,
+        spo2: esp32Data?.spo2 ?? 0,
         attention: esp32Data?.attention ?? 0,
         meditation: esp32Data?.meditation ?? 0,
         alpha: esp32Data?.alpha ?? 0,
@@ -832,7 +834,7 @@ export default function SelfAssessment() {
         theta: esp32Data?.theta ?? 0,
         baRatio: esp32Data?.ba_ratio ?? 0,
         state: inferred,
-        method: esp32Data ? 'Cognitive Self-Assessment + EEG' : 'Cognitive Self-Assessment',
+        method: esp32Data ? (esp32Data.bpm > 0 ? 'Cognitive Self-Assessment + EEG/SpO2' : 'Cognitive Self-Assessment + EEG') : 'Cognitive Self-Assessment',
         confidence: 0.80,
         moodSnapshot: moodSnapshot || undefined,
       });

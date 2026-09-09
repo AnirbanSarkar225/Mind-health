@@ -63,17 +63,17 @@ export async function analyzeSession(signals, answers, state, description) {
   if (!isLLMAvailable()) return null;
   try {
     await rateLimit();
-    const prompt = `Analyze this mental health session data.
+    const prompt = `Analyze this mental health session data incorporating neuro-spectral (EEG alpha/beta/theta, attention/meditation) and cardiovascular biomarkers (Heart Rate BPM, SpO2 blood oxygen saturation) if present.
 Signals: ${JSON.stringify(signals)}
 Answers: ${JSON.stringify(answers)}
 State: ${state}
 Description: ${description}
 
 Return ONLY a JSON object with: 
-- summary (2-3 sentence analysis string)
+- summary (2-3 sentence analysis string integrating brainwaves and cardiovascular response)
 - insights (array of key observation strings)
 - recommendations (array of actionable suggestion strings)
-- neuralPattern (description of what the brainwave pattern suggests string)`;
+- neuralPattern (description of what the combined physiological pattern suggests string)`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;

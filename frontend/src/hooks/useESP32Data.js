@@ -18,9 +18,20 @@ export default function useESP32Data({ maxHistory = 120, autoClassify = false } 
 
   const wsRef = useRef(null);
   const reconnectTimer = useRef(null);
+  const liveWatchdogRef = useRef(null);
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 20;
   const mountedRef = useRef(true);
+
+  const resetWatchdog = useCallback(() => {
+    setIsLive(true);
+    if (liveWatchdogRef.current) clearTimeout(liveWatchdogRef.current);
+    liveWatchdogRef.current = setTimeout(() => {
+      if (mountedRef.current) {
+        setIsLive(false);
+      }
+    }, 3500); // 3.5 seconds without an ESP32 packet = stream standby
+  }, []);
 
   const addToHistory = useCallback((reading) => {
     setHistory((prev) => {
@@ -47,7 +58,7 @@ export default function useESP32Data({ maxHistory = 120, autoClassify = false } 
         if (!mountedRef.current) return;
         setConnectionStatus('connected');
         reconnectAttempts.current = 0;
-        console.log('[ESP32 WS] Connected to live telemetry stream');
+        console.log('[ESP32 WS] Connected to backend telemetry gateway');
       };
 
       ws.onmessage = (event) => {
@@ -62,7 +73,7 @@ export default function useESP32Data({ maxHistory = 120, autoClassify = false } 
               classification: msg.data.classification || null,
             };
             setLatestData(reading);
-            setIsLive(true);
+            resetWatchdog();
             addToHistory(reading);
 
             if (msg.data.classification) {
@@ -82,6 +93,7 @@ export default function useESP32Data({ maxHistory = 120, autoClassify = false } 
         if (!mountedRef.current) return;
         setConnectionStatus('disconnected');
         setIsLive(false);
+        if (liveWatchdogRef.current) clearTimeout(liveWatchdogRef.current);
         wsRef.current = null;
 
         // Auto-reconnect with exponential backoff
@@ -96,13 +108,15 @@ export default function useESP32Data({ maxHistory = 120, autoClassify = false } 
 
       ws.onerror = (err) => {
         console.warn('[ESP32 WS] Connection error');
+        if (liveWatchdogRef.current) clearTimeout(liveWatchdogRef.current);
+        setIsLive(false);
         ws.close();
       };
     } catch (err) {
       console.warn('[ESP32 WS] Failed to create WebSocket:', err);
       setConnectionStatus('disconnected');
     }
-  }, [addToHistory]);
+  }, [addToHistory, resetWatchdog]);
 
   // Connect on mount, cleanup on unmount
   useEffect(() => {
@@ -121,18 +135,22 @@ export default function useESP32Data({ maxHistory = 120, autoClassify = false } 
     };
   }, [connect]);
 
-  // Fetch initial history on mount via REST
+  // Fetch initial history on mount via REST, only set latestData if ESP32 is actively connected
   useEffect(() => {
-    fetch('/api/esp32/history?limit=50')
-      .then((r) => r.ok ? r.json() : Promise.reject())
-      .then((data) => {
-        if (data.readings && data.readings.length > 0) {
-          setHistory(data.readings);
-          setLatestData(data.readings[data.readings.length - 1]);
+    Promise.all([
+      fetch('/api/esp32/status').then((r) => r.ok ? r.json() : null).catch(() => null),
+      fetch('/api/esp32/history?limit=50').then((r) => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([statusData, historyData]) => {
+      if (!mountedRef.current) return;
+      if (historyData?.readings && historyData.readings.length > 0) {
+        setHistory(historyData.readings);
+        if (statusData?.connected) {
+          setLatestData(historyData.readings[historyData.readings.length - 1]);
+          resetWatchdog();
         }
-      })
-      .catch(() => {});
-  }, []);
+      }
+    });
+  }, [resetWatchdog]);
 
   // Manual disconnect/reconnect
   const disconnect = useCallback(() => {

@@ -255,17 +255,33 @@ export default function Dashboard() {
                   ) : (
                     <div className="grid-2" style={{ gap: '1rem' }}>
                       <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1.1rem' }}>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Alpha Band Power (8-13 Hz)</div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Alpha Wave (8-13 Hz)</div>
                         <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)', marginTop: '4px' }}>
                           {latestSession.alpha_power?.toFixed?.(1) ?? latestSession.alpha_power ?? '—'} μV
                         </div>
                       </div>
                       <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1.1rem' }}>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Beta/Alpha Vigilance Ratio</div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Beta/Alpha Ratio</div>
                         <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '4px' }}>
                           {latestSession.beta_alpha_ratio?.toFixed?.(2) ?? latestSession.beta_alpha_ratio ?? '—'}
                         </div>
                       </div>
+                      {latestSession.bpm > 0 && (
+                        <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1.1rem' }}>
+                          <div style={{ fontSize: '0.85rem', color: '#EF4444', fontWeight: 700 }}>Heart Rate (Pulse)</div>
+                          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#EF4444', marginTop: '4px' }}>
+                            {latestSession.bpm} BPM
+                          </div>
+                        </div>
+                      )}
+                      {latestSession.spo2 > 0 && (
+                        <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1.1rem' }}>
+                          <div style={{ fontSize: '0.85rem', color: '#0EA5E9', fontWeight: 700 }}>Blood Oxygen (SpO2)</div>
+                          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0EA5E9', marginTop: '4px' }}>
+                            {latestSession.spo2}%
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
