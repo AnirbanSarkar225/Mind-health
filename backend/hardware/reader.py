@@ -103,10 +103,18 @@ def run_bridge(port=None, baud=DEFAULT_BAUD, target_url=DEFAULT_URL):
             print("-" * 68)
 
             success_count = 0
+            no_data_ticks = 0
             while True:
                 line = ser.readline().decode("utf-8", errors="ignore").strip()
                 if not line:
+                    no_data_ticks += 1
+                    if no_data_ticks == 5:
+                        print("[Bridge] ⚠ No data from ESP32 for 5s — is the sketch uploaded?")
+                    elif no_data_ticks == 15:
+                        print("[Bridge] ⚠ Still no data. Check: Arduino sketch flashed? MAX30102 wired?")
                     continue
+
+                no_data_ticks = 0
 
                 # Filter for JSON lines starting with '{' and ending with '}'
                 if line.startswith("{") and line.endswith("}"):
@@ -132,9 +140,8 @@ def run_bridge(port=None, baud=DEFAULT_BAUD, target_url=DEFAULT_URL):
                     except json.JSONDecodeError:
                         pass
                 else:
-                    # Print setup or debug messages from ESP32 Serial
-                    if "[SpO2]" in line or "[NeuroSync]" in line or "[WiFi]" in line:
-                        print(f"  [ESP32 Log] {line}")
+                    # Print ALL serial messages from ESP32 (setup, errors, debug)
+                    print(f"  [ESP32] {line}")
 
         except serial.SerialException as e:
             print(f"\n[Bridge] Serial connection error: {e}")

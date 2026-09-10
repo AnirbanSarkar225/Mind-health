@@ -13,6 +13,20 @@
 #define BIOAMP_PIN 34
 
 // =====================================================
+// BIOAMP DEMO MODE
+// =====================================================
+// true  = BioAmp OUT disconnected; EEG values simulated
+// false = real BioAmp on GPIO34
+//
+// NOTE:
+// If using a 5V BioAmp with ESP32, use the required
+// voltage divider/protection before GPIO34.
+//
+// =====================================================
+
+#define BIOAMP_DEMO_MODE true
+
+// =====================================================
 // OLED
 // =====================================================
 
@@ -28,7 +42,7 @@ U8G2_SH1106_128X64_NONAME_F_HW_I2C oled(
 MAX30105 sensor;
 
 // =====================================================
-// SETTINGS
+// MAX30102 SETTINGS
 // =====================================================
 
 #define FINGER_THRESHOLD 10000
@@ -42,7 +56,7 @@ int spo2Index = 0;
 int decimation = 0;
 
 // =====================================================
-// VALUES
+// SENSOR VALUES
 // =====================================================
 
 uint32_t irValue = 0;
@@ -70,7 +84,7 @@ unsigned long measurementStart = 0;
 #define MEASUREMENT_TIME 10000UL
 
 // =====================================================
-// PULSE DETECTION
+// HEARTBEAT DETECTION
 // =====================================================
 
 float irDC = 0;
@@ -93,6 +107,7 @@ unsigned long lastPulseTime = 0;
 #define BPM_HISTORY 5
 
 float bpmValues[BPM_HISTORY];
+
 int bpmCount = 0;
 int bpmIndex = 0;
 
@@ -138,6 +153,9 @@ int meditation = 0;
 unsigned long lastOLED = 0;
 unsigned long lastSerial = 0;
 
+// SEND JSON EVERY 200ms = 5 TIMES/SECOND
+#define SERIAL_INTERVAL 200
+
 // =====================================================
 // MEDIAN
 // =====================================================
@@ -168,7 +186,10 @@ float median(float *arr, int n) {
   if (n % 2)
     return temp[n / 2];
 
-  return (temp[n / 2] + temp[n / 2 - 1]) / 2.0;
+  return (
+    temp[n / 2] +
+    temp[n / 2 - 1]
+  ) / 2.0;
 }
 
 // =====================================================
@@ -202,6 +223,13 @@ void resetAll() {
 
   measurementStart = 0;
 
+  // Reset heartbeat waveform state
+  irDC = 0;
+  irAC = 0;
+
+  previousAC = 0;
+  previousPreviousAC = 0;
+
   for (int i = 0; i < BPM_HISTORY; i++)
     bpmValues[i] = 0;
 
@@ -210,7 +238,7 @@ void resetAll() {
 }
 
 // =====================================================
-// CUSTOM HEARTBEAT DETECTION
+// HEARTBEAT DETECTION
 // =====================================================
 
 void detectHeartbeat(uint32_t ir) {
@@ -218,39 +246,26 @@ void detectHeartbeat(uint32_t ir) {
   if (!fingerPresent)
     return;
 
-  /*
-     Slowly track the DC component.
-  */
-
+  // Slowly track DC component
   if (irDC == 0)
     irDC = ir;
 
-  irDC = irDC * 0.95 + ir * 0.05;
+  irDC =
+    irDC * 0.95 +
+    ir * 0.05;
 
-  /*
-     Remove DC component.
-  */
+  // Remove DC
+  irAC =
+    ir - irDC;
 
-  irAC = ir - irDC;
+  // Dynamic threshold
+  float threshold =
+    max(
+      250.0f,
+      irDC * 0.0025f
+    );
 
-  /*
-     Dynamic threshold.
-
-     This is the important part.
-
-     We don't require the MAX30102 waveform
-     to have one fixed amplitude.
-  */
-
-  float threshold = max(250.0f, irDC * 0.0025f);
-
-  /*
-     Detect a local maximum.
-
-     previousPreviousAC < previousAC
-     previousAC > currentAC
-  */
-
+  // Local peak detection
   bool peak =
     previousAC > previousPreviousAC &&
     previousAC > irAC &&
@@ -258,37 +273,38 @@ void detectHeartbeat(uint32_t ir) {
 
   if (peak && pulseArmed) {
 
-    unsigned long now = millis();
+    unsigned long now =
+      millis();
 
     if (lastPulseTime > 0) {
 
       unsigned long interval =
         now - lastPulseTime;
 
-      /*
-         Reject impossible heart rates.
-      */
-
+      // Valid heart interval
       if (
         interval >= MIN_BEAT_INTERVAL &&
         interval <= MAX_BEAT_INTERVAL
       ) {
 
         float newBPM =
-          60000.0 / interval;
+          60000.0 /
+          interval;
 
         if (
           newBPM >= 40 &&
           newBPM <= 200
         ) {
 
-          bpm = (int)newBPM;
+          bpm =
+            (int)newBPM;
 
-          // -----------------------------------------
+          // -------------------------------------------
           // BPM HISTORY
-          // -----------------------------------------
+          // -------------------------------------------
 
-          bpmValues[bpmIndex] = newBPM;
+          bpmValues[bpmIndex] =
+            newBPM;
 
           bpmIndex++;
 
@@ -304,15 +320,17 @@ void detectHeartbeat(uint32_t ir) {
               bpmCount
             );
 
-          /*
-             EMA smoothing.
-          */
+          // -------------------------------------------
+          // BPM SMOOTHING
+          // -------------------------------------------
 
           if (bpmStable == 0) {
 
-            bpmStable = (int)med;
+            bpmStable =
+              (int)med;
 
-          } else {
+          }
+          else {
 
             bpmStable =
               (int)(
@@ -321,11 +339,12 @@ void detectHeartbeat(uint32_t ir) {
               );
           }
 
-          // -----------------------------------------
+          // -------------------------------------------
           // HRV
-          // -----------------------------------------
+          // -------------------------------------------
 
-          rrValues[rrIndex] = interval;
+          rrValues[rrIndex] =
+            interval;
 
           rrIndex++;
 
@@ -339,55 +358,67 @@ void detectHeartbeat(uint32_t ir) {
 
             float sum = 0;
 
-            for (int i = 0; i < rrCount; i++)
-              sum += rrValues[i];
+            for (
+              int i = 0;
+              i < rrCount;
+              i++
+            ) {
+
+              sum +=
+                rrValues[i];
+            }
 
             float mean =
               sum / rrCount;
 
             float variance = 0;
 
-            for (int i = 0; i < rrCount; i++) {
+            for (
+              int i = 0;
+              i < rrCount;
+              i++
+            ) {
 
               float d =
-                rrValues[i] - mean;
+                rrValues[i] -
+                mean;
 
-              variance += d * d;
+              variance +=
+                d * d;
             }
 
-            variance /= rrCount;
+            variance /=
+              rrCount;
 
             hrvSDNN =
               sqrt(variance);
           }
-
-          Serial.print("HEARTBEAT: ");
-          Serial.print(bpm);
-          Serial.print(" BPM | Stable: ");
-          Serial.println(bpmStable);
         }
       }
     }
 
-    lastPulseTime = now;
+    lastPulseTime =
+      now;
 
-    /*
-       Prevent detecting the same peak
-       multiple times.
-    */
-
-    pulseArmed = false;
+    pulseArmed =
+      false;
   }
 
-  /*
-     Re-arm when waveform falls.
-  */
+  // Re-arm
+  if (
+    irAC <
+    threshold * 0.3
+  ) {
 
-  if (irAC < threshold * 0.3)
-    pulseArmed = true;
+    pulseArmed =
+      true;
+  }
 
-  previousPreviousAC = previousAC;
-  previousAC = irAC;
+  previousPreviousAC =
+    previousAC;
+
+  previousAC =
+    irAC;
 }
 
 // =====================================================
@@ -403,11 +434,13 @@ void processSpO2(
     return;
 
   /*
-     MAX30102 = 100 Hz
+     MAX30102:
+     100 Hz
 
-     SpO2 algorithm = 25 Hz
+     SpO2:
+     25 Hz
 
-     Keep every 4th sample.
+     Therefore take every 4th sample.
   */
 
   decimation++;
@@ -419,8 +452,11 @@ void processSpO2(
 
   if (spo2Index < SPO2_SIZE) {
 
-    irBuffer[spo2Index] = ir;
-    redBuffer[spo2Index] = red;
+    irBuffer[spo2Index] =
+      ir;
+
+    redBuffer[spo2Index] =
+      red;
 
     spo2Index++;
 
@@ -443,11 +479,14 @@ void processSpO2(
     &validHR
   );
 
-  algorithmSpO2 = algorithmO2;
-  algorithmSpO2Valid = validO2;
+  algorithmSpO2 =
+    algorithmO2;
+
+  algorithmSpO2Valid =
+    validO2;
 
   /*
-     Accept only sensible SpO2.
+     Accept sensible SpO2.
   */
 
   if (
@@ -458,16 +497,17 @@ void processSpO2(
 
     if (spo2 == 0) {
 
-      spo2 = algorithmO2;
+      spo2 =
+        algorithmO2;
 
-    } else {
-
-      /*
-         Smooth SpO2.
-      */
+    }
+    else {
 
       if (
-        abs(algorithmO2 - spo2) <= 5
+        abs(
+          algorithmO2 -
+          spo2
+        ) <= 5
       ) {
 
         spo2 =
@@ -478,10 +518,14 @@ void processSpO2(
   }
 
   /*
-     Shift 75 samples.
+     Shift last 75 samples.
   */
 
-  for (int i = 25; i < 100; i++) {
+  for (
+    int i = 25;
+    i < 100;
+    i++
+  ) {
 
     irBuffer[i - 25] =
       irBuffer[i];
@@ -491,59 +535,60 @@ void processSpO2(
   }
 
   /*
-     Next 25 samples will fill
-     positions 75-99.
+     Next 25 samples
+     go into 75-99.
   */
 
   spo2Index = 75;
 }
 
 // =====================================================
-// MAX30102
+// MAX30102 PROCESSING
 // =====================================================
 
 void processMAX30102() {
 
-  while (sensor.available()) {
+  while (
+    sensor.available()
+  ) {
 
-    irValue = sensor.getIR();
-    redValue = sensor.getRed();
+    irValue =
+      sensor.getIR();
 
-    /*
-       Finger detection.
-    */
+    redValue =
+      sensor.getRed();
 
+    // Finger detection
     fingerPresent =
-      irValue > FINGER_THRESHOLD;
+      irValue >
+      FINGER_THRESHOLD;
 
     if (!fingerPresent) {
 
       resetAll();
+    }
 
-    } else {
+    else {
 
-      /*
-         Start measurement.
-      */
+      // Start measurement
+      if (
+        !measuring &&
+        !ready
+      ) {
 
-      if (!measuring && !ready) {
-
-        measuring = true;
+        measuring =
+          true;
 
         measurementStart =
           millis();
       }
 
-      /*
-         Heartbeat.
-      */
+      // BPM
+      detectHeartbeat(
+        irValue
+      );
 
-      detectHeartbeat(irValue);
-
-      /*
-         SpO2.
-      */
-
+      // SpO2
       processSpO2(
         irValue,
         redValue
@@ -555,7 +600,7 @@ void processMAX30102() {
 }
 
 // =====================================================
-// EEG
+// EEG BAND POWER
 // =====================================================
 
 float bandPower(
@@ -566,17 +611,20 @@ float bandPower(
   float high
 ) {
 
-  float total = 0;
+  float total =
+    0;
 
   int start =
     (int)(
-      low * size /
+      low *
+      size /
       sampleRate
     );
 
   int end =
     (int)(
-      high * size /
+      high *
+      size /
       sampleRate
     );
 
@@ -584,54 +632,83 @@ float bandPower(
     start = 1;
 
   if (end >= size / 2)
-    end = size / 2 - 1;
+    end =
+      size / 2 - 1;
 
-  float mean = 0;
+  float mean =
+    0;
 
-  for (int i = 0; i < size; i++)
-    mean += data[i];
+  for (
+    int i = 0;
+    i < size;
+    i++
+  ) {
 
-  mean /= size;
+    mean +=
+      data[i];
+  }
 
-  for (int k = start; k <= end; k++) {
+  mean /=
+    size;
+
+  for (
+    int k = start;
+    k <= end;
+    k++
+  ) {
 
     float freq =
-      k * sampleRate /
+      k *
+      sampleRate /
       size;
 
     float omega =
-      2.0 * PI *
+      2.0 *
+      PI *
       freq /
       sampleRate;
 
     float coeff =
-      2.0 * cos(omega);
+      2.0 *
+      cos(omega);
 
     float q0 = 0;
     float q1 = 0;
     float q2 = 0;
 
-    for (int i = 0; i < size; i++) {
+    for (
+      int i = 0;
+      i < size;
+      i++
+    ) {
 
       float x =
-        data[i] - mean;
+        data[i] -
+        mean;
 
       q0 =
-        coeff * q1 -
+        coeff *
+        q1 -
         q2 +
         x;
 
-      q2 = q1;
-      q1 = q0;
+      q2 =
+        q1;
+
+      q1 =
+        q0;
     }
 
     float power =
       q1 * q1 +
       q2 * q2 -
-      coeff * q1 * q2;
+      coeff *
+      q1 *
+      q2;
 
     if (power > 0)
-      total += power;
+      total +=
+        power;
   }
 
   return total;
@@ -679,17 +756,31 @@ void calculateEEG() {
     return;
 
   thetaPower =
-    theta / total * 100;
+    theta /
+    total *
+    100;
 
   alphaPower =
-    alpha / total * 100;
+    alpha /
+    total *
+    100;
 
   betaPower =
-    beta / total * 100;
+    beta /
+    total *
+    100;
 
-  if (alphaPower > 0)
+  if (alphaPower > 0) {
+
     betaAlphaRatio =
-      betaPower / alphaPower;
+      betaPower /
+      alphaPower;
+  }
+  else {
+
+    betaAlphaRatio =
+      0;
+  }
 
   attention =
     constrain(
@@ -714,32 +805,138 @@ void calculateEEG() {
 }
 
 // =====================================================
-// EEG SAMPLING
+// EEG
 // =====================================================
 
 void processEEG() {
 
-  unsigned long now = micros();
+#if BIOAMP_DEMO_MODE
+
+  /*
+     DEMO MODE
+
+     BioAmp is disconnected.
+     EEG values are simulated.
+  */
+
+  float t =
+    millis() /
+    1000.0f;
+
+  float a =
+    34.0f +
+    6.0f *
+    sin(
+      t * 0.35f
+    );
+
+  float b =
+    31.0f +
+    5.0f *
+    sin(
+      t * 0.27f +
+      1.1f
+    );
+
+  float th =
+    35.0f +
+    5.0f *
+    sin(
+      t * 0.22f +
+      2.0f
+    );
+
+  float total =
+    a + b + th;
+
+  if (total > 0) {
+
+    alphaPower =
+      a /
+      total *
+      100.0f;
+
+    betaPower =
+      b /
+      total *
+      100.0f;
+
+    thetaPower =
+      th /
+      total *
+      100.0f;
+  }
+
+  if (alphaPower > 0.01f) {
+
+    betaAlphaRatio =
+      betaPower /
+      alphaPower;
+  }
+  else {
+
+    betaAlphaRatio =
+      0;
+  }
+
+  attention =
+    constrain(
+      (int)(
+        betaPower * 1.5f +
+        thetaPower * 0.2f
+      ),
+      0,
+      100
+    );
+
+  meditation =
+    constrain(
+      (int)(
+        alphaPower * 1.4f +
+        thetaPower * 0.3f -
+        betaPower * 0.3f
+      ),
+      0,
+      100
+    );
+
+#else
+
+  /*
+     REAL BIOAMP
+  */
+
+  unsigned long now =
+    micros();
 
   if (
     now - lastEEGMicros <
-    (1000000UL / EEG_RATE)
+    (1000000UL /
+     EEG_RATE)
   )
     return;
 
-  lastEEGMicros = now;
+  lastEEGMicros =
+    now;
 
   eegBuffer[eegIndex] =
-    analogRead(BIOAMP_PIN);
+    analogRead(
+      BIOAMP_PIN
+    );
 
   eegIndex++;
 
-  if (eegIndex >= EEG_SIZE) {
+  if (
+    eegIndex >=
+    EEG_SIZE
+  ) {
 
     eegIndex = 0;
 
     calculateEEG();
   }
+
+#endif
 }
 
 // =====================================================
@@ -789,13 +986,18 @@ void drawOLED() {
   // MEASURING
   // ===================================================
 
-  else if (measuring && !ready) {
+  else if (
+    measuring &&
+    !ready
+  ) {
 
     unsigned long elapsed =
-      millis() - measurementStart;
+      millis() -
+      measurementStart;
 
     int remaining =
-      10 - elapsed / 1000;
+      10 -
+      elapsed / 1000;
 
     if (remaining < 0)
       remaining = 0;
@@ -872,8 +1074,8 @@ void drawOLED() {
         "BPM: %d",
         bpmStable
       );
-
-    } else {
+    }
+    else {
 
       sprintf(
         bpmText,
@@ -896,8 +1098,8 @@ void drawOLED() {
         "O2 : %d%%",
         spo2
       );
-
-    } else {
+    }
+    else {
 
       sprintf(
         spo2Text,
@@ -944,7 +1146,7 @@ void drawOLED() {
     oled.drawStr(
       69,
       63,
-      "Keep still"
+      "EEG on WEB"
     );
   }
 
@@ -952,58 +1154,110 @@ void drawOLED() {
 }
 
 // =====================================================
-// SERIAL
+// JSON SERIAL OUTPUT
 // =====================================================
+//
+// IMPORTANT:
+// ONE JSON OBJECT = ONE SERIAL LINE
+//
+// Do NOT put debugging Serial.print() statements here.
+// Your Python reader can parse these lines directly.
+//
 
-void printSerial() {
+void printJSON() {
 
   Serial.print("{");
 
+  // Sensor
   Serial.print("\"finger\":");
-  Serial.print(fingerPresent ? 1 : 0);
+  Serial.print(
+    fingerPresent ? 1 : 0
+  );
 
+  // Heart rate
   Serial.print(",\"bpm\":");
-  Serial.print(bpmStable);
+  Serial.print(
+    bpmStable
+  );
 
+  // SpO2
   Serial.print(",\"spo2\":");
-  Serial.print(spo2);
+  Serial.print(
+    spo2
+  );
 
+  // HRV
   Serial.print(",\"hrv_sdnn\":");
-  Serial.print(hrvSDNN, 2);
+  Serial.print(
+    hrvSDNN,
+    2
+  );
 
+  // EEG
   Serial.print(",\"alpha\":");
-  Serial.print(alphaPower, 2);
+  Serial.print(
+    alphaPower,
+    2
+  );
 
   Serial.print(",\"beta\":");
-  Serial.print(betaPower, 2);
+  Serial.print(
+    betaPower,
+    2
+  );
 
   Serial.print(",\"theta\":");
-  Serial.print(thetaPower, 2);
+  Serial.print(
+    thetaPower,
+    2
+  );
 
   Serial.print(",\"ba_ratio\":");
-  Serial.print(betaAlphaRatio, 2);
+  Serial.print(
+    betaAlphaRatio,
+    2
+  );
 
+  // Mental state
   Serial.print(",\"attention\":");
-  Serial.print(attention);
+  Serial.print(
+    attention
+  );
 
   Serial.print(",\"meditation\":");
-  Serial.print(meditation);
+  Serial.print(
+    meditation
+  );
 
+  // Raw MAX30102
   Serial.print(",\"ir\":");
-  Serial.print(irValue);
+  Serial.print(
+    irValue
+  );
 
+  // SpO2 diagnostic
   Serial.print(",\"algorithm_spo2\":");
-  Serial.print(algorithmSpO2);
+  Serial.print(
+    algorithmSpO2
+  );
 
   Serial.print(",\"algorithm_spo2_valid\":");
-  Serial.print(algorithmSpO2Valid);
+  Serial.print(
+    algorithmSpO2Valid
+  );
 
+  // Measurement state
   Serial.print(",\"measuring\":");
-  Serial.print(measuring ? 1 : 0);
+  Serial.print(
+    measuring ? 1 : 0
+  );
 
   Serial.print(",\"ready\":");
-  Serial.print(ready ? 1 : 0);
+  Serial.print(
+    ready ? 1 : 0
+  );
 
+  // End JSON
   Serial.println("}");
 }
 
@@ -1013,16 +1267,25 @@ void printSerial() {
 
 void setup() {
 
+  /*
+     USB Serial is ONLY for JSON telemetry.
+     Baud rate must match reader.py.
+  */
+
   Serial.begin(115200);
 
   delay(1000);
 
+  // I2C
   Wire.begin(
     SDA_PIN,
     SCL_PIN
   );
 
+  // ===================================================
   // OLED
+  // ===================================================
+
   oled.begin();
 
   oled.clearBuffer();
@@ -1047,10 +1310,9 @@ void setup() {
 
   delay(1000);
 
+  // ===================================================
   // MAX30102
-  Serial.println(
-    "Checking MAX30102..."
-  );
+  // ===================================================
 
   if (
     !sensor.begin(
@@ -1059,11 +1321,17 @@ void setup() {
     )
   ) {
 
-    Serial.println(
-      "MAX30102 NOT FOUND!"
-    );
+    /*
+       MAX30102 not found.
+       Show error on OLED and send a JSON error
+       packet so reader.py can report the problem.
+    */
 
     oled.clearBuffer();
+
+    oled.setFont(
+      u8g2_font_6x12_tf
+    );
 
     oled.drawStr(
       15,
@@ -1079,31 +1347,31 @@ void setup() {
 
     oled.sendBuffer();
 
-    while (1)
-      delay(100);
+    // Send periodic JSON error so reader.py knows
+    while (1) {
+      Serial.println("{\"error\":\"MAX30102_NOT_FOUND\",\"finger\":0,\"bpm\":0,\"spo2\":0,\"hrv_sdnn\":0,\"alpha\":0,\"beta\":0,\"theta\":0,\"ba_ratio\":0,\"attention\":0,\"meditation\":0,\"ir\":0,\"algorithm_spo2\":0,\"algorithm_spo2_valid\":0,\"measuring\":0,\"ready\":0}");
+      delay(2000);
+    }
   }
 
-  Serial.println(
-    "MAX30102 OK"
-  );
-
   /*
-     IMPORTANT:
+     MAX30102 configuration
 
-     SampleAverage = 1
-     SampleRate    = 100 Hz
-
-     This gives the custom BPM detector
-     the full-resolution IR waveform.
+     LED brightness = 60
+     Average        = 1
+     Mode           = RED + IR
+     Sample rate    = 100 Hz
+     Pulse width    = 411
+     ADC range      = 4096
   */
 
   sensor.setup(
-    60,     // LED brightness
-    1,      // sample average
-    2,      // RED + IR
-    100,    // sample rate
-    411,    // pulse width
-    4096    // ADC range
+    60,
+    1,
+    2,
+    100,
+    411,
+    4096
   );
 
   sensor.setPulseAmplitudeRed(
@@ -1120,11 +1388,12 @@ void setup() {
 
   resetAll();
 
-  Serial.println(
-    "SYSTEM READY"
-  );
-
+  // Ready screen
   oled.clearBuffer();
+
+  oled.setFont(
+    u8g2_font_6x12_tf
+  );
 
   oled.drawStr(
     20,
@@ -1149,43 +1418,66 @@ void setup() {
 
 void loop() {
 
+  // ---------------------------------------------------
   // MAX30102
+  // ---------------------------------------------------
+
   sensor.check();
 
   processMAX30102();
 
+  // ---------------------------------------------------
   // EEG
+  // ---------------------------------------------------
+
   processEEG();
 
-  // Measurement timer
+  // ---------------------------------------------------
+  // MEASUREMENT TIMER
+  // ---------------------------------------------------
+
   if (
     measuring &&
-    millis() - measurementStart >=
+    millis() -
+    measurementStart >=
     MEASUREMENT_TIME
   ) {
 
     measuring = false;
+
     ready = true;
   }
 
+  // ---------------------------------------------------
   // OLED
+  // ---------------------------------------------------
+
   if (
-    millis() - lastOLED >= 150
+    millis() -
+    lastOLED >=
+    150
   ) {
 
-    lastOLED = millis();
+    lastOLED =
+      millis();
 
     drawOLED();
   }
 
-  // Serial
+  // ---------------------------------------------------
+  // JSON TO COMPUTER
+  // ---------------------------------------------------
+
   if (
-    millis() - lastSerial >= 1000
+    millis() -
+    lastSerial >=
+    SERIAL_INTERVAL
   ) {
 
-    lastSerial = millis();
+    lastSerial =
+      millis();
 
-    printSerial();
+    printJSON();
   }
 
   delay(1);
