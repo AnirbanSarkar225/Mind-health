@@ -1,4 +1,4 @@
-# 🧠 Gita-NeuroSync — Biosignal Telemetry & Cognitive Wellness Platform
+# Gita-NeuroSync — Biosignal Telemetry & Cognitive Wellness Platform
 
 <p align="center">
   <img src="https://img.shields.io/badge/Node.js-18+-339933?style=flat-square&logo=node.js&logoColor=white" alt="Node.js">
@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/React-18+-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React">
   <img src="https://img.shields.io/badge/WebSocket-Realtime-4EAA25?style=flat-square" alt="WebSocket">
   <img src="https://img.shields.io/badge/AI-Google_Gemini_LLM-4285F4?style=flat-square&logo=google&logoColor=white" alt="Gemini">
-  <img src="https://img.shields.io/badge/Database-PostgreSQL_%7C_In--Memory_Fallback-316192?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/Database-PostgreSQL-316192?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL">
   <img src="https://img.shields.io/badge/Hardware-ESP32_%7C_Arduino-00979D?style=flat-square&logo=arduino&logoColor=white" alt="ESP32">
   <img src="https://img.shields.io/badge/Status-Prototype_Exploration-F59E0B?style=flat-square" alt="Prototype">
   <img src="https://img.shields.io/badge/License-MIT-gray?style=flat-square" alt="License">
@@ -14,21 +14,21 @@
 
 ---
 
-## 📌 Executive Overview
+## Executive Overview
 
 **Gita-NeuroSync** is a multi-tier IoT and intelligent web platform designed to explore the intersection of real-time biosignal telemetry, state classification, and AI-assisted cognitive reappraisal. The system connects physical or simulated biometrics (ESP32/BioAmp pulse, EEG frequency bands, skin conductance) with an interactive web dashboard, offering:
 
 1. **Hardware-in-the-Loop Telemetry:** Streaming continuous sensor readings from ESP32/microcontroller firmware via serial bridge and WebSockets.
 2. **Mental State Classification:** Evaluating telemetry variance and spectral bands to classify states into heuristic baseline clusters (**Focus**, **Stress**, **Relaxed**, **Agitated**).
 3. **AI Cognitive Reappraisal:** Integrating **Google Gemini LLM** to generate contextual, philosophically grounded cognitive reframing prompts (drawing upon Vedantic resilience paradigms from the *Bhagavad Gita*).
-4. **Resilient Dual-Mode Persistence:** Fully decoupled database tier that automatically operates in **Zero-Setup In-Memory Mode** for local offline testing, or connects to persistent **Cloud PostgreSQL** (Supabase/Neon) for production session storage.
+4. **Relational Persistence:** Robust persistence layer using **Cloud PostgreSQL** (Supabase / Neon) for user account management, session tracking, and historical assessment records.
 
 > [!WARNING]
 > **Mandatory Non-Clinical Disclaimer:** Gita-NeuroSync is an undergraduate engineering and educational research prototype. It is **not** a certified medical device, diagnostic instrument, or clinical therapy application. It must not be used as a substitute for professional mental health care, psychological counseling, or clinical medical diagnosis.
 
 ---
 
-## 🏗️ Hardware-to-Cloud System Architecture
+## Hardware-to-Cloud System Architecture
 
 The diagram below illustrates the end-to-end data pipeline from physical/simulated sensors to AI cognitive reasoning:
 
@@ -47,10 +47,7 @@ flowchart TD
     end
 
     subgraph Storage_Tier["Persistence Tier"]
-        DB_SW{"Database Connection Check"}
-        SVR --> DB_SW
-        DB_SW -->|"DATABASE_URL provided"| PG[("Cloud PostgreSQL (Neon / Supabase)")]
-        DB_SW -->|"No external DB"| MEM[("Local In-Memory Store (memoryDb.js)")]
+        SVR --> PG[("PostgreSQL Database (Neon / Supabase)")]
     end
 
     subgraph Client_Tier["Presentation Tier (React Client & Vite)"]
@@ -63,7 +60,7 @@ flowchart TD
 
 ---
 
-## 🔌 Verified REST API & WebSocket Reference
+## Verified REST API & WebSocket Reference
 
 ### 1. REST Endpoints
 | Router | Method | Route | Description | Auth Required |
@@ -87,7 +84,7 @@ flowchart TD
 
 ---
 
-## 📂 Repository Layout
+## Repository Layout
 
 ```
 Mind-health/
@@ -101,9 +98,9 @@ Mind-health/
 │   ├── server.js                      # Express server entrypoint & WebSocket mount
 │   ├── package.json                   # Backend dependencies
 │   ├── .env.example                   # Environment configuration template
-│   ├── config/                        # Database configuration & fallbacks
-│   │   ├── db.js                      # PostgreSQL pool setup
-│   │   └── memoryDb.js                # Zero-setup in-memory persistence fallback
+│   ├── config/                        # Database configuration
+│   │   ├── db.js                      # PostgreSQL connection pool
+│   │   └── memoryDb.js                # In-memory test persistence
 │   ├── hardware/                      # Microcontroller & serial bridge
 │   │   └── reader.py                  # Python serial port reading script
 │   ├── middleware/                    # Security & authentication
@@ -135,10 +132,11 @@ Mind-health/
 
 ---
 
-## ⚡ Installation & Execution Guide
+## Installation & Execution Guide
 
 ### Prerequisites
 * **Node.js 18+** and `npm`
+* **PostgreSQL 14+** (Local or Cloud instance e.g. Neon / Supabase)
 * Python 3.10+ (if running physical hardware serial bridge)
 
 ### 1. Install Dependencies
@@ -146,10 +144,9 @@ Run from project root to install all dependencies for both backend and frontend:
 ```bash
 npm run install-all
 ```
-*(Or manually run `cd backend && npm install` followed by `cd ../frontend && npm install`).*
 
 ### 2. Environment Configuration
-Create a `.env` file inside `backend/` (or copy from `backend/.env.example`):
+Create a `.env` file inside `backend/`:
 ```bash
 cp backend/.env.example backend/.env
 ```
@@ -157,13 +154,11 @@ Key variables:
 ```env
 PORT=5000
 JWT_SECRET=your_jwt_secret_key_here
+DATABASE_URL=postgresql://user:password@host:5432/gita_neurosync?sslmode=require
 
 # Optional: Google Gemini API Key for AI Cognitive Reappraisal
 GEMINI_API_KEY=your_gemini_api_key_here
 LLM_ENABLED=true
-
-# Optional: Cloud PostgreSQL (if blank, system automatically uses in-memory DB)
-# DATABASE_URL=postgresql://user:password@host:5432/dbname?sslmode=require
 ```
 
 ### 3. Launch Development Stack
@@ -176,18 +171,17 @@ npm start
 ```bash
 npm test
 ```
-*(Executes 44 automated tests verifying classification algorithms, mathematical scoring models, and in-memory persistence).*
 
 ---
 
-## 🔒 Security, Privacy & Data Handling
+## Security, Privacy & Data Handling
 
 1. **Authentication:** User authentication relies on JSON Web Tokens (`jsonwebtoken`) signed with a server secret. Passwords are never stored in plaintext.
-2. **Zero-Trace Health Telemetry:** Biosignal time-series data is treated as ephemeral stream data. Raw hardware waveforms are not permanently stored; only aggregate session summaries (mean heart rate, session duration, user reflection tags) are retained.
-3. **Resilient Fallback Mode:** In environments where external database services are unreachable or unconfigured, the application falls back gracefully to `memoryDb.js`, allowing full offline execution without application crashes.
+2. **PostgreSQL Relational Safety:** Queries use parameterized SQL prepared statements to prevent injection attacks.
+3. **Zero-Trace Health Telemetry:** Biosignal time-series data is treated as ephemeral stream data. Raw hardware waveforms are not permanently stored; only aggregate session summaries (mean heart rate, session duration, user reflection tags) are retained.
 
 ---
 
-## 📄 Technical Interview Preparation
+## Technical Interview Preparation
 
 For deep-dive architectural trade-offs, hardware-to-cloud telemetry pipelines, and 15 source-code grounded technical interview questions, see [docs/INTERVIEW_PREP.md](docs/INTERVIEW_PREP.md).
